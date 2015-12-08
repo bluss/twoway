@@ -4,14 +4,14 @@ This is my substring search workspace.
 Documentation
 -------------
 
+Fast substring search for strings and byte strings, using the `two-way algorithm`_.
+
 This is the same code as is included in Rust's libstd to “power” ``str::find(&str)``,
 but here it is exposed with some improvements:
 
 - Available for byte string searches using ``&[u8]``
 - Using ``memchr`` for the single byte case, which is ultra fast.
 - Having an optional SSE4.2 accelerated version which is much faster.
-
-Fast substring search for strings and byte strings.
 
 Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version.
 
@@ -26,6 +26,8 @@ MIT / APACHE-2.0
 
 Interesting Links
 -----------------
+
+.. _`two-way algorithm`: http://www-igm.univ-mlv.fr/~lecroq/string/node26.html
 
 - Two Way: http://www-igm.univ-mlv.fr/~lecroq/string/node26.html
 - Matters Computational: http://www.jjj.de/fxt/#fxtbook
