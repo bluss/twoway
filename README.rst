@@ -1,9 +1,21 @@
 
 This is my substring search workspace.
 
-License: Not yet released. My contributions to rust-lang/rust are
-the finished versions which are of course licensed. This repository
-is just a scratchpad and work in progress.
+Documentation
+-------------
+
+Fast substring search for strings and byte strings.
+
+Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version.
+
+- ``twoway::find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize>``
+- ``twoway::find_str(text: &str, pattern: &str) -> Option<usize>``
+
+License
+-------
+
+MIT / APACHE-2.0
+
 
 Interesting Links
 -----------------
