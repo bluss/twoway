@@ -5,7 +5,7 @@
 #![allow(unused_imports)]
 extern crate test;
 extern crate regex;
-#[cfg(features = "jetscii")]
+#[cfg(feature = "jetscii")]
 extern crate jetscii;
 extern crate itertools;
 extern crate odds;
@@ -56,7 +56,7 @@ macro_rules! bench_contains_vs_tw {
             use itertools::Itertools;
             use twoway::TwoWaySearcher;
             use test::{Bencher, black_box};
-            #[cfg(features = "jetscii")]
+            #[cfg(feature = "jetscii")]
             use jetscii::Substring;
             use odds::string::StrExt;
 
@@ -91,7 +91,7 @@ macro_rules! bench_contains_vs_tw {
                 b.bytes = haystack.len() as u64;
             }
 
-            #[cfg(features = "jetscii")]
+            #[cfg(feature = "jetscii")]
             #[bench]
             pub fn jetscii_find(b: &mut Bencher) {
                 let haystack = black_box($hay);
@@ -129,7 +129,7 @@ macro_rules! bench_contains_vs_tw {
             }
             */
 
-            #[cfg(features = "pcmp")]
+            #[cfg(feature = "pcmp")]
             #[bench]
             pub fn pcmp_find(b: &mut Bencher) {
                 let haystack = black_box($hay);
