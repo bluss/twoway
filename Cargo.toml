@@ -1,0 +1,37 @@
+[package]
+name = "twoway"
+version = "0.1.0"
+authors = ["bluss"]
+description = "two-way substring search for strings and byte strings. Optional SSE4.2 acceleration (requires nightly and cargo feature flag pcmp) using pcmpestri. Memchr is the only mandatory dependency."
+
+[dependencies]
+memchr = "0.1"
+
+quickcheck = { version = "0.2", optional = true }
+
+itertools = { version = "0.4", optional = true }
+
+odds = { version = "0.2", optional = true }
+jetscii = {version = "0.3", features= ["unstable"], optional = true }
+
+[dev-dependencies]
+regex = "0.1"
+itertools = "0.4"
+odds = "0.2"
+
+custom_derive = "0.1"
+newtype_derive = "0.1"
+rand = "0.3.10"
+
+[features]
+
+qc = ["quickcheck", "pcmp", "pattern"]
+all = ["jetscii", "qc", "pcmp", "pattern"]
+# pcmpestri
+pcmp = ["itertools", "odds"]
+pattern = []
+
+[profile.release]
+debug = true
+[profile.bench]
+debug = true
