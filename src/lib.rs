@@ -807,6 +807,7 @@ impl TwoWayStrategy for RejectAndMatch {
 }
 
 
+#[cfg(feature = "pattern")]
 #[cfg(test)]
 impl<'a, 'b> StrSearcher<'a, 'b> {
     fn twoway(&self) -> &TwoWaySearcher {

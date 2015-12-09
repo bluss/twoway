@@ -33,7 +33,7 @@ pcmp = ["itertools", "odds"]
 
 # Internal features for testing & benchmarking & development
 pattern = []
-qc = ["quickcheck", "pcmp", "pattern"]
+qc = ["quickcheck", "pattern"]
 all = ["jetscii", "qc", "pcmp", "pattern"]
 
 [profile.release]
