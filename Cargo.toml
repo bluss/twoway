@@ -3,7 +3,7 @@ name = "twoway"
 version = "0.1.0"
 authors = ["bluss"]
 
-description = "Fast two-way substring search for strings and byte strings. Optional SSE4.2 acceleration (requires nightly and cargo feature flag pcmp) using pcmpestri. Memchr is the only mandatory dependency. The two way algorithm is also used by rust's libstd itself, but here it is exposed both for byte strings, using memchr, and optionally using a SSE4.2 accelerated version."
+description = "Fast substring search for strings and byte strings. Optional SSE4.2 acceleration (requires nightly and cargo feature flag pcmp) using pcmpestri. Memchr is the only mandatory dependency. The two way algorithm is also used by rust's libstd itself, but here it is exposed both for byte strings, using memchr, and optionally using a SSE4.2 accelerated version."
 
 license = "MIT/Apache-2.0"
 repository = "https://github.com/bluss/scratchspace"
@@ -12,30 +12,29 @@ keywords = ["substring-search", "string", "pcmpestri", "find"]
 
 [dependencies]
 memchr = "0.1"
-
-quickcheck = { version = "0.2", optional = true }
-
 itertools = { version = "0.4", optional = true }
-
 odds = { version = "0.2", optional = true }
+
+# testing deps
+quickcheck = { version = "0.2", optional = true }
 jetscii = {version = "0.3", features= ["unstable"], optional = true }
 
 [dev-dependencies]
 regex = "0.1"
 itertools = "0.4"
 odds = "0.2"
-
 custom_derive = "0.1"
 newtype_derive = "0.1"
 rand = "0.3.10"
 
 [features]
-
-qc = ["quickcheck", "pcmp", "pattern"]
-all = ["jetscii", "qc", "pcmp", "pattern"]
 # pcmpestri
 pcmp = ["itertools", "odds"]
+
+# Internal features for testing & benchmarking & development
 pattern = []
+qc = ["quickcheck", "pattern"]
+all = ["jetscii", "qc", "pcmp", "pattern"]
 
 [profile.release]
 debug = true

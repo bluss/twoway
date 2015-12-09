@@ -27,6 +27,7 @@ use std::str::pattern::{
 /// `find_str` finds the first ocurrence of `pattern` in the `text`.
 ///
 /// Uses the SSE42 version if it is compiled in.
+#[inline]
 pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
     find_bytes(text.as_bytes(), pattern.as_bytes())
 }
@@ -60,6 +61,40 @@ pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
         }
     }
 }
+
+/// `rfind_str` finds the last ocurrence of `pattern` in the `text`
+/// and returns the index of the start of the match.
+///
+/// As of this writing, this function uses the two way algorithm
+/// in pure rust (with no SSE4.2 support).
+#[inline]
+pub fn rfind_str(text: &str, pattern: &str) -> Option<usize> {
+    rfind_bytes(text.as_bytes(), pattern.as_bytes())
+}
+
+/// `rfind_bytes` finds the last ocurrence of `pattern` in the `text`,
+/// and returns the index of the start of the match.
+///
+/// As of this writing, this function uses the two way algorithm
+/// in pure rust (with no SSE4.2 support).
+pub fn rfind_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
+    if pattern.is_empty() {
+        Some(text.len())
+    } else if pattern.len() == 1 {
+        memchr::memrchr(pattern[0], text)
+    } else {
+        let mut searcher = TwoWaySearcher::new(pattern, text.len());
+        let is_long = searcher.memory == usize::MAX;
+        // write out `true` and `false` cases to encourage the compiler
+        // to specialize the two cases separately.
+        if is_long {
+            searcher.next_back::<MatchOnly>(text, pattern, true).map(|t| t.0)
+        } else {
+            searcher.next_back::<MatchOnly>(text, pattern, false).map(|t| t.0)
+        }
+    }
+}
+
 
 /// Dummy wrapper for &str
 #[doc(hidden)]
@@ -772,6 +807,7 @@ impl TwoWayStrategy for RejectAndMatch {
 }
 
 
+#[cfg(feature = "pattern")]
 #[cfg(test)]
 impl<'a, 'b> StrSearcher<'a, 'b> {
     fn twoway(&self) -> &TwoWaySearcher {

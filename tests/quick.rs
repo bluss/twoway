@@ -16,6 +16,10 @@ extern crate odds;
 mod quickchecks {
 
 use twoway::{Str, StrSearcher};
+use twoway::{
+    find_str,
+    rfind_str,
+};
 use it::{Itertools, Unfold};
 
 use std::str::pattern::{Pattern, Searcher, ReverseSearcher, SearchStep};
@@ -161,6 +165,28 @@ fn test_contains_rev() {
         let b = &b[..];
         let truth = a.contains(b);
         TestResult::from_bool(contains_rev(&a, &b) == truth)
+    }
+    quickcheck(prop as fn(_, _) -> _);
+}
+
+#[test]
+fn test_find_str() {
+    fn prop(a: Text, b: Short<Text>) -> TestResult {
+        let a = &a.0;
+        let b = &b[..];
+        let truth = a.find(b);
+        TestResult::from_bool(find_str(&a, &b) == truth)
+    }
+    quickcheck(prop as fn(_, _) -> _);
+}
+
+#[test]
+fn test_rfind_str() {
+    fn prop(a: Text, b: Short<Text>) -> TestResult {
+        let a = &a.0;
+        let b = &b[..];
+        let truth = a.rfind(b);
+        TestResult::from_bool(rfind_str(&a, &b) == truth)
     }
     quickcheck(prop as fn(_, _) -> _);
 }
@@ -462,6 +488,7 @@ fn test_find_rev_period() {
 }
 
 
+#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_contains() {
@@ -474,6 +501,7 @@ fn test_pcmp_contains() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
+#[cfg(feature = "pcmp")]
 #[test]
 fn test_pcmp_contains_plus() {
     fn prop(a: Text, b: Short<Text>) -> TestResult {
@@ -489,6 +517,7 @@ fn test_pcmp_contains_plus() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
+#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_find() {
@@ -501,6 +530,7 @@ fn test_pcmp_find() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
+#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_find_simple() {
@@ -513,6 +543,7 @@ fn test_pcmp_find_simple() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
+#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_find_period() {

@@ -9,6 +9,9 @@ matrix:
       env:
        - FEATURES='all'
        - BENCH=1
+    - rust: nightly
+      env:
+       - FEATURES='qc pattern'
 branches:
   only:
     - master

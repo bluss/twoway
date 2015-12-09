@@ -16,7 +16,9 @@ but here it is exposed with some improvements:
 Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version.
 
 - ``twoway::find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize>``
+- ``twoway::rfind_bytes(text: &[u8], pattern: &[u8]) -> Option<usize>``
 - ``twoway::find_str(text: &str, pattern: &str) -> Option<usize>``
+- ``twoway::rfind_str(text: &str, pattern: &str) -> Option<usize>``
 
 License
 -------
