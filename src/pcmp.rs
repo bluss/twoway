@@ -30,35 +30,6 @@ const EQUAL_ORDERED: u8 = 0b1100;
 ///
 /// Return value: least index for start of (partial) match, (16 if no match).
 #[inline(always)]
-unsafe fn pcmpestri(text: &[u8], offset: usize, text_len: usize, needle: u64, needle_len: usize) -> u32 {
-    debug_assert!(text_len + offset <= text.len());
-    debug_assert!(needle_len <= 16);
-    let res: u32;
-    // 0xC = 12, Equal Ordered comparison
-    asm!("pcmpestri $1, [$2 + $3], $$0xc"
-         : // output operands
-         "={ecx}"(res)
-         : // input operands
-         "x"(needle),        // operand 1 = needle
-         "r"(text.as_ptr()), // operand 2 pointer = haystack
-         "r"(offset),        // operand 2 offset
-         "{rax}"(needle_len),// length of operand 1 = needle
-         "{rdx}"(text_len)   // length of operand 2 = haystack
-         : // clobbers
-         "cc"
-         : "intel" // options
-    );
-    res
-}
-
-/// `pcmpestri`
-///
-/// “Packed compare explicit length strings (return index)”
-///
-/// PCMPESTRI xmm1, xmm2/m128, imm8
-///
-/// Return value: least index for start of (partial) match, (16 if no match).
-#[inline(always)]
 unsafe fn pcmpestri_16(text: *const u8, offset: usize, text_len: usize,
                        needle_1: u64, needle_2: u64, needle_len: usize) -> u32 {
     //debug_assert!(text_len + offset <= text.len()); // saturates at 16
@@ -124,16 +95,6 @@ unsafe fn pcmpestrm_eq_each(text: *const u8, offset: usize, text_len: usize,
 }
 
 
-#[test]
-fn test_pcmpestri_1() {
-    let text = b"abc";
-    let n = b'c' as u64;
-    unsafe {
-        assert_eq!(pcmpestri(text, 0, text.len(), n, 1), 2);
-        assert_eq!(pcmpestri(text, 0, text.len(), 0, 1), 16);
-    }
-}
-
 /// Return critical position, period.
 /// critical position is zero-based
 ///
@@ -152,6 +113,7 @@ fn crit_period(pat: &[u8]) -> (usize, usize) {
 
 /// Search for first possible match of `pat` -- might be just a byte
 /// Return `(pos, length)` length of match
+#[cfg(test)]
 fn first_start_of_match(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
     // not safe for text that is non aligned and ends at page boundary
     let patl = pat.len();

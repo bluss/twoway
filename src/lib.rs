@@ -36,6 +36,7 @@ pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
 ///
 /// Uses the SSE42 version if it is compiled in.
 #[cfg(feature = "pcmp")]
+#[inline]
 pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
     pcmp::find(text, pattern).map(|t| t.0)
 }
