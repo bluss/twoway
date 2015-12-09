@@ -10,8 +10,8 @@ This is the same code as is included in Rust's libstd to “power” ``str::find
 but here it is exposed with some improvements:
 
 - Available for byte string searches using ``&[u8]``
+- Having an optional SSE4.2 accelerated version which is even faster.
 - Using ``memchr`` for the single byte case, which is ultra fast.
-- Having an optional SSE4.2 accelerated version which is much faster.
 
 Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version.
 
