@@ -250,7 +250,7 @@ fn find_2byte_pat(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
 }
 
 /// Simd text search optimized for short patterns (<= 8 bytes)
-fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
+fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
     debug_assert!(pat.len() <= 8);
     /*
     if pat.len() == 2 {
@@ -284,7 +284,7 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
                     }
                 }
 
-                return Some((pos, pos + pat.len()));
+                return Some(pos);
             }
         }
     }
@@ -310,7 +310,7 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
                     }
                 }
 
-                return Some((pos, pos + pat.len()));
+                return Some(pos);
             }
         }
     }
@@ -319,10 +319,10 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
 /// `find` finds the first ocurrence of `pattern` in the `text`.
 ///
 /// This is the SSE42 accelerated version.
-pub fn find(text: &[u8], pattern: &[u8]) -> Option<(usize, usize)> {
+pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
     let pat = pattern;
     if pat.len() == 0 {
-        return Some((0, 0));
+        return Some(0);
     }
 
     if text.len() < pat.len() {
@@ -330,7 +330,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<(usize, usize)> {
     }
 
     if pat.len() == 1 {
-        return memchr::memchr(pat[0], text).map(|i| (i, i + 1));
+        return memchr::memchr(pat[0], text);
     } else if pat.len() <= 6 {
         return find_short_pat(text, pat);
     }
@@ -395,7 +395,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<(usize, usize)> {
                 continue 'search;
             }
 
-            return Some((pos, pos + pat.len()));
+            return Some(pos);
         }
     } else {
         // Short period case -- use memory, true period
@@ -438,7 +438,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<(usize, usize)> {
                 continue 'search_memory;
             }
 
-            return Some((pos, pos + pat.len()));
+            return Some(pos);
         }
     }
 
@@ -476,7 +476,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<(usize, usize)> {
             continue 'tail;
         }
 
-        return Some((pos, pos + pat.len()));
+        return Some(pos);
     }
 }
 
@@ -484,7 +484,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<(usize, usize)> {
 fn test_find() {
     let text = b"abc";
     assert_eq!(find(text, b"d"), None);
-    assert_eq!(find(text, b"c"), Some((2, 3)));
+    assert_eq!(find(text, b"c"), Some(2));
 
     let longer = "longer text and so on, a bit more";
 
@@ -493,24 +493,24 @@ fn test_find() {
         for window in longer.as_bytes().windows(wsz) {
             let str_find = longer.find(::std::str::from_utf8(window).unwrap());
             assert!(str_find.is_some());
-            assert_eq!(find(longer.as_bytes(), window).map(|(a, _)| a), str_find);
+            assert_eq!(find(longer.as_bytes(), window), str_find);
         }
     }
 
     let pat = b"ger text and so on";
     assert!(pat.len() > 16);
-    assert_eq!(Some((3, 3 + pat.len())), find(longer.as_bytes(), pat));
+    assert_eq!(Some(3), find(longer.as_bytes(), pat));
 
     // test short period case
 
     let text = "cbabababcbabababab";
     let n = "abababab";
-    assert_eq!(text.find(n), find(text.as_bytes(), n.as_bytes()).map(|(a, _)| a));
+    assert_eq!(text.find(n), find(text.as_bytes(), n.as_bytes()));
 
     // memoized case -- this is tricky
     let text = "cbababababababababababababababab";
     let n = "abababab";
-    assert_eq!(text.find(n), find(text.as_bytes(), n.as_bytes()).map(|(a, _)| a));
+    assert_eq!(text.find(n), find(text.as_bytes(), n.as_bytes()));
 
 }
 
