@@ -13,7 +13,7 @@ but here it is exposed with some improvements:
 - Having an optional SSE4.2 accelerated version which is even faster.
 - Using ``memchr`` for the single byte case, which is ultra fast.
 
-Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version.
+Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version (only the forward search).
 
 - ``twoway::find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize>``
 - ``twoway::rfind_bytes(text: &[u8], pattern: &[u8]) -> Option<usize>``
