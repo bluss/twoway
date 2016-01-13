@@ -525,7 +525,7 @@ fn test_pcmp_find() {
         let a = &a.0;
         let b = &b[..];
         let truth = a.find(b);
-        TestResult::from_bool(::twoway::pcmp::find(a.as_bytes(), b.as_bytes()).map(|(x, _)| x) == truth)
+        TestResult::from_bool(::twoway::pcmp::find(a.as_bytes(), b.as_bytes()) == truth)
     }
     quickcheck(prop as fn(_, _) -> _);
 }
@@ -538,7 +538,7 @@ fn test_pcmp_find_simple() {
         let a = &a.0;
         let b = &b[..];
         let truth = a.find(b);
-        TestResult::from_bool(::twoway::pcmp::find(a.as_bytes(), b.as_bytes()).map(|(x, _)| x) == truth)
+        TestResult::from_bool(::twoway::pcmp::find(a.as_bytes(), b.as_bytes()) == truth)
     }
     quickcheck(prop as fn(_, _) -> _);
 }
@@ -552,7 +552,7 @@ fn test_pcmp_find_period() {
         let b = &b[..];
         let pat = [b, b].concat();
         let truth = a.find(&pat);
-        TestResult::from_bool(::twoway::pcmp::find(a.as_bytes(), pat.as_bytes()).map(|(x, _)| x) == truth)
+        TestResult::from_bool(::twoway::pcmp::find(a.as_bytes(), pat.as_bytes()) == truth)
     }
     quickcheck(prop as fn(_, _) -> _);
 }
