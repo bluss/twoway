@@ -23,6 +23,10 @@ Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version (onl
 Recent Changes
 --------------
 
+- 0.1.2
+
+  - Internal improvements to the ``pcmp`` module.
+
 - 0.1.1
 
   - Add ``rfind_bytes``, ``rfind_str``
