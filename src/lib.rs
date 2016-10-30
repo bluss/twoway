@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "pattern", feature(str_char, pattern))]
+#![cfg_attr(feature = "pattern", feature(pattern))]
 #![cfg_attr(feature = "pcmp", feature(asm))]
 use std::cmp;
 use std::usize;
