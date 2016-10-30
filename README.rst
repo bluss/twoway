@@ -1,6 +1,10 @@
 
 This is my substring search workspace.
 
+Please read the `API documentation here`__
+
+__ https://docs.rs/twoway/
+
 Documentation
 -------------
 
@@ -22,6 +26,12 @@ Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version (onl
 
 Recent Changes
 --------------
+
+- 0.1.3
+
+  - Link to docs.rs docs
+  - Drop ``pcmp``'s itertools dependency
+  - Update nightly code for recent changes
 
 - 0.1.2
 
