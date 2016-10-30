@@ -15,8 +15,6 @@ memchr = "0.1"
 itertools = { version = "0.4", optional = true }
 odds = { version = "0.2", optional = true }
 
-# testing deps
-quickcheck = { version = "0.2", optional = true }
 jetscii = {version = "0.3", features= ["unstable"], optional = true }
 
 [dev-dependencies]
@@ -26,6 +24,7 @@ odds = "0.2"
 custom_derive = "0.1"
 newtype_derive = "0.1"
 rand = "0.3.10"
+quickcheck = { version = "0.4", default-features = false }
 
 [features]
 # pcmpestri
@@ -33,8 +32,7 @@ pcmp = ["itertools", "odds"]
 
 # Internal features for testing & benchmarking & development
 pattern = []
-qc = ["quickcheck", "pattern"]
-all = ["jetscii", "qc", "pcmp", "pattern"]
+all = ["jetscii", "pcmp", "pattern"]
 
 [profile.release]
 debug = true
