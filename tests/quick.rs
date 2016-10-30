@@ -1,18 +1,14 @@
-#![cfg_attr(feature = "qc", feature(pattern, str_char))]
+#![feature(pattern)]
 #![allow(dead_code)]
 
 extern crate twoway;
 
-#[cfg(feature = "qc")]
 extern crate quickcheck;
 extern crate itertools as it;
 extern crate odds;
-#[cfg(feature = "qc")]
 #[macro_use] extern crate custom_derive;
-#[cfg(feature = "qc")]
 #[macro_use] extern crate newtype_derive;
 
-#[cfg(feature = "qc")]
 mod quickchecks {
 
 use twoway::{Str, StrSearcher};

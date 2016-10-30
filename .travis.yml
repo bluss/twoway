@@ -5,19 +5,19 @@ matrix:
     - rust: stable
     - rust: beta
     - rust: nightly
-    - rust: nightly
       env:
        - FEATURES='all'
        - BENCH=1
     - rust: nightly
       env:
-       - FEATURES='qc pattern'
+       - FEATURES='pattern'
 branches:
   only:
     - master
 script:
   - |
       cargo build --verbose --features "$FEATURES" &&
-      cargo test --verbose --features "$FEATURES" &&
+      cargo test --verbose --lib &&
+      ([ -z "$FEATURES" ] || cargo test --verbose --features "$FEATURES" ) &&
       ([ "$BENCH" != 1 ] || cargo bench --verbose --features "$FEATURES") &&
       cargo doc --verbose --features "$FEATURES"
