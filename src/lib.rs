@@ -3,8 +3,6 @@
 use std::cmp;
 use std::usize;
 
-#[cfg(feature = "pcmp")]
-extern crate itertools;
 extern crate memchr;
 
 #[doc(hidden)]

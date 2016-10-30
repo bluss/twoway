@@ -15,7 +15,14 @@ use std::ptr;
 
 use TwoWaySearcher;
 
-use itertools::ZipSlices;
+use std::iter::Zip;
+
+fn zip<I, J>(i: I, j: J) -> Zip<I::IntoIter, J::IntoIter>
+    where I: IntoIterator,
+          J: IntoIterator
+{
+    i.into_iter().zip(j)
+}
 
 /// `pcmpestri` flags
 const EQUAL_ANY: u8 = 0b0000;
@@ -154,7 +161,7 @@ fn first_start_of_match_inner(text: &[u8], pat: &[u8], p1: u64, p2: u64) -> Opti
                 continue;
             }
             let mut mlen = 1;
-            for (a, b) in ZipSlices::new(&text[start + 1..], &pat[1..]) {
+            for (&a, &b) in zip(&text[start + 1..], &pat[1..]) {
                 if a != b {
                     mlen = 0;
                     break;
@@ -276,7 +283,7 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
                     if pos > text.len() - pat.len() {
                         return None;
                     }
-                    for (a, b) in ZipSlices::new(&text[pos + mlen..], &pat[mlen..]) {
+                    for (&a, &b) in zip(&text[pos + mlen..], &pat[mlen..]) {
                         if a != b {
                             pos += 1;
                             continue 'search;
@@ -302,7 +309,7 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
                     if pos > text.len() - pat.len() {
                         return None;
                     }
-                    for (a, b) in ZipSlices::new(&text[pos + mlen..], &pat[mlen..]) {
+                    for (&a, &b) in zip(&text[pos + mlen..], &pat[mlen..]) {
                         if a != b {
                             pos += 1;
                             continue 'tail;
@@ -567,7 +574,7 @@ pub fn shared_prefix(text: &[u8], pat: &[u8]) -> usize {
         // unchecked slicing .. we don't want panics in this function
         let text_suffix = odds::slice_unchecked(text, prefix_len, len);
         let pat_suffix = odds::slice_unchecked(pat, prefix_len, len);
-        for (&a, &b) in ZipSlices::new(text_suffix, pat_suffix) {
+        for (&a, &b) in zip(text_suffix, pat_suffix) {
             if a != b {
                 break;
             }

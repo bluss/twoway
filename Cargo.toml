@@ -13,14 +13,13 @@ keywords = ["substring-search", "string", "pcmpestri", "find"]
 
 [dependencies]
 memchr = "0.1"
-itertools = { version = "0.4", optional = true }
 odds = { version = "0.2", optional = true }
 
 jetscii = {version = "0.3", features= ["unstable"], optional = true }
 
 [dev-dependencies]
 regex = "0.1"
-itertools = "0.4"
+itertools = "0.5"
 odds = "0.2"
 custom_derive = "0.1"
 newtype_derive = "0.1"
@@ -29,7 +28,7 @@ quickcheck = { version = "0.4", default-features = false }
 
 [features]
 # pcmpestri
-pcmp = ["itertools", "odds"]
+pcmp = ["odds"]
 
 # Internal features for testing & benchmarking & development
 pattern = []
