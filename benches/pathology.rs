@@ -515,3 +515,13 @@ pub fn find_byte_1(b: &mut Bencher) {
     });
     b.bytes = haystack.len() as u64;
 }
+
+#[bench]
+pub fn regex_2(b: &mut Bencher) {
+    let haystack = black_box(LONG);
+    let reg = regex!("(@|#)");
+    b.iter(|| {
+        reg.find(&haystack)
+    });
+    b.bytes = haystack.len() as u64;
+}
