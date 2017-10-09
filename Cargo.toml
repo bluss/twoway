@@ -19,7 +19,7 @@ jetscii = {version = "0.3", features= ["unstable"], optional = true }
 
 [dev-dependencies]
 regex = "0.1"
-itertools = "0.5"
+itertools = "0.7.0"
 odds = "0.2"
 custom_derive = "0.1"
 newtype_derive = "0.1"
