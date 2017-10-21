@@ -12,13 +12,13 @@ documentation = "https://docs.rs/twoway/"
 keywords = ["substring-search", "string", "pcmpestri", "find"]
 
 [dependencies]
-memchr = "0.1"
+memchr = "2.0"
 odds = { version = "0.2", optional = true }
 
 jetscii = {version = "0.3", features= ["unstable"], optional = true }
 
 [dev-dependencies]
-regex = "0.1"
+regex = "0.2"
 itertools = "0.7.0"
 odds = "0.2"
 custom_derive = "0.1"
