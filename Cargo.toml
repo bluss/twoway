@@ -20,7 +20,7 @@ jetscii = {version = "0.3", features= ["unstable"], optional = true }
 regex = "0.2"
 itertools = "0.7.0"
 odds = "0.2"
-custom_derive = "0.1"
+macro-attr = "0.2"
 newtype_derive = "0.1"
 rand = "0.3.10"
 quickcheck = { version = "0.4", default-features = false }
