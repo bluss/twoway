@@ -7,15 +7,16 @@
 
 #![allow(dead_code)]
 
-extern crate odds;
+extern crate unchecked_index;
 extern crate memchr;
 
 use std::cmp;
+use std::iter::Zip;
 use std::ptr;
 
-use TwoWaySearcher;
+use self::unchecked_index::get_unchecked;
 
-use std::iter::Zip;
+use TwoWaySearcher;
 
 fn zip<I, J>(i: I, j: J) -> Zip<I::IntoIter, J::IntoIter>
     where I: IntoIterator,
@@ -572,8 +573,8 @@ pub fn shared_prefix(text: &[u8], pat: &[u8]) -> usize {
         }
         // so one block left, the last (up to) 16 bytes
         // unchecked slicing .. we don't want panics in this function
-        let text_suffix = odds::slice_unchecked(text, prefix_len, len);
-        let pat_suffix = odds::slice_unchecked(pat, prefix_len, len);
+        let text_suffix = get_unchecked(text, prefix_len..len);
+        let pat_suffix = get_unchecked(pat, prefix_len..len);
         for (&a, &b) in zip(text_suffix, pat_suffix) {
             if a != b {
                 break;

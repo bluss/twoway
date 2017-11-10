@@ -13,7 +13,7 @@ keywords = ["substring-search", "string", "pcmpestri", "find"]
 
 [dependencies]
 memchr = "2.0"
-odds = { version = "0.2", optional = true }
+unchecked-index = { version = "0.2", optional = true }
 jetscii = {version = "0.3", features= ["unstable"], optional = true }
 
 [dev-dependencies]
@@ -27,7 +27,7 @@ quickcheck = { version = "0.4", default-features = false }
 
 [features]
 # pcmpestri
-pcmp = ["odds"]
+pcmp = ["unchecked-index"]
 
 # Internal features for testing & benchmarking & development
 pattern = []
