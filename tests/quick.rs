@@ -1,3 +1,4 @@
+#![cfg(feature = "pattern")]
 #![feature(pattern)]
 #![allow(dead_code)]
 
