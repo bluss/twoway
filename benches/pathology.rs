@@ -9,6 +9,7 @@ extern crate regex;
 extern crate jetscii;
 extern crate itertools;
 extern crate odds;
+extern crate galil_seiferas;
 
 extern crate twoway;
 
@@ -45,6 +46,18 @@ pub fn memmem(hay: &str, n: &str) -> bool {
 
 }
 
+fn brute_force<T: Eq>(text: &[T], pattern: &[T]) -> Option<usize> {
+    if pattern.len() <= text.len() {
+        let n = text.len();
+        let m = pattern.len();
+        for i in 0..n - m + 1 {
+            if text[i..i + m] == *pattern {
+                return Some(i);
+            }
+        }
+    }
+    None
+}
 
 macro_rules! bench_contains_vs_tw {
     ($name: ident, $hay: expr, $n: expr) => {
@@ -180,6 +193,32 @@ macro_rules! bench_contains_vs_tw {
                     let needle = test::black_box(&needle);
                     let haystack = test::black_box(&haystack);
                     test::black_box(contains(haystack, needle));
+                });
+                b.bytes = haystack.len() as u64;
+            }
+
+            #[bench]
+
+            #[bench]
+            pub fn gs_find(b: &mut Bencher) {
+                let haystack = $hay;
+                let needle = $n;
+                b.iter(|| {
+                    let needle = test::black_box(&needle);
+                    let haystack = test::black_box(&haystack);
+                    ::galil_seiferas::gs_find(haystack.as_bytes(), needle.as_bytes())
+                });
+                b.bytes = haystack.len() as u64;
+            }
+
+            #[bench]
+            pub fn brute_force(b: &mut Bencher) {
+                let haystack = $hay;
+                let needle = $n;
+                b.iter(|| {
+                    let needle = test::black_box(&needle);
+                    let haystack = test::black_box(&haystack);
+                    ::brute_force(haystack.as_bytes(), needle.as_bytes())
                 });
                 b.bytes = haystack.len() as u64;
             }
