@@ -7,8 +7,8 @@ __ https://docs.rs/twoway/
 
 |build_status|_ |crates|_
 
-.. |build_status| image:: https://travis-ci.org/bluss/twoway.svg?branch=master
-.. _build_status: https://travis-ci.org/bluss/twoway
+.. |build_status| image:: https://travis-ci.org/bluss/scratchspace.svg?branch=master
+.. _build_status: https://travis-ci.org/bluss/scratchspace
 
 .. |crates| image:: http://meritbadge.herokuapp.com/twoway
 .. _crates: https://crates.io/crates/twoway
