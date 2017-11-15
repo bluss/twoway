@@ -5,8 +5,7 @@ use std::usize;
 
 extern crate memchr;
 
-#[doc(hidden)]
-pub mod tw;
+mod tw;
 #[cfg(feature = "pcmp")]
 pub mod pcmp;
 pub mod bmh;

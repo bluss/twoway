@@ -4,6 +4,7 @@
 //!
 //! http://monge.univ-mlv.fr/~mac/Articles-PDF/CP-1991-jacm.pdf
 #![allow(dead_code)]
+#![cfg(test)]
 
 use std::str;
 use std::cmp::max;
