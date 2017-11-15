@@ -9,6 +9,7 @@ extern crate regex;
 extern crate jetscii;
 extern crate itertools;
 extern crate odds;
+#[cfg(feature = "benchmarks")]
 extern crate galil_seiferas;
 
 extern crate twoway;
@@ -197,8 +198,8 @@ macro_rules! bench_contains_vs_tw {
                 b.bytes = haystack.len() as u64;
             }
 
-            #[bench]
 
+            #[cfg(feature = "benchmarks")]
             #[bench]
             pub fn gs_find(b: &mut Bencher) {
                 let haystack = $hay;

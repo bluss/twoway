@@ -15,6 +15,7 @@ keywords = ["substring-search", "string", "pcmpestri", "find"]
 memchr = "2.0"
 unchecked-index = { version = "0.2", optional = true }
 jetscii = {version = "0.3", features= ["unstable"], optional = true }
+galil-seiferas = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
 regex = "0.2"
@@ -24,7 +25,6 @@ macro-attr = "0.2"
 newtype_derive = "0.1"
 rand = "0.3.10"
 quickcheck = { version = "0.4", default-features = false }
-galil-seiferas = { version = "0.1.1" }
 
 [features]
 # pcmpestri
@@ -33,6 +33,7 @@ pcmp = ["unchecked-index"]
 # Internal features for testing & benchmarking & development
 pattern = []
 test-set = []
+benchmarks = ["galil-seiferas", "pattern"]
 all = ["jetscii", "pcmp", "pattern", "test-set"]
 
 [profile.release]
