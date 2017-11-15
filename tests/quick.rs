@@ -554,6 +554,7 @@ fn test_pcmp_find_period() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
+#[cfg(feature = "test-set")]
 #[test]
 fn test_find_byte() {
     fn prop(v: Vec<u8>, offset: u8) -> bool {
@@ -577,6 +578,7 @@ fn test_find_byte() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
+#[cfg(feature = "test-set")]
 #[test]
 fn test_rfind_byte() {
     fn prop(v: Vec<u8>, offset: u8) -> bool {

@@ -32,7 +32,8 @@ pcmp = ["unchecked-index"]
 
 # Internal features for testing & benchmarking & development
 pattern = []
-all = ["jetscii", "pcmp", "pattern"]
+test-set = []
+all = ["jetscii", "pcmp", "pattern", "test-set"]
 
 [profile.release]
 [profile.bench]

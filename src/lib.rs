@@ -9,7 +9,6 @@ mod tw;
 #[cfg(feature = "pcmp")]
 pub mod pcmp;
 pub mod bmh;
-#[doc(hidden)]
 pub mod set;
 mod util;
 
