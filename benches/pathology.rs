@@ -531,6 +531,7 @@ pub fn rfind_char_1(b: &mut Bencher) {
     b.bytes = haystack.len() as u64;
 } 
 
+#[cfg(feature = "test-set")]
 fn bench_data() -> Vec<u8> { vec![0u8; 256 * 1024] }
 
 #[cfg(feature = "test-set")]
