@@ -4,6 +4,13 @@
 use std::cmp::{min, max};
 extern crate twoway;
 
+// This fuzzer tests that given a slice data, pick a subslice out of it
+// and check that the find_bytes function can find the correct position
+// of the subslice inside the whole data.
+//
+// The first 4 bytes are only used for picking the boundaries of the
+// subslice (so nothing is random, it's driven by the contents of data).
+
 fuzz_target!(|data: &[u8]| {
     if data.len() > 4 {
         let len = data.len() - 4;
