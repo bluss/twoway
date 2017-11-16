@@ -35,6 +35,11 @@ Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version (onl
 Recent Changes
 --------------
 
+- 0.1.6
+
+  - The hidden and internal test module set, technically pub, was removed from
+    standard compilation.
+
 - 0.1.5
 
   - Update from an odds dependency to using ``unchecked-index`` instead
