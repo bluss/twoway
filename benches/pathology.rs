@@ -4,7 +4,6 @@
 
 #![allow(unused_imports)]
 extern crate test;
-extern crate regex;
 #[cfg(feature = "jetscii")]
 extern crate jetscii;
 extern crate itertools;
@@ -14,6 +13,7 @@ extern crate galil_seiferas;
 
 extern crate twoway;
 
+#[cfg(unused)]
 macro_rules! regex {
     ($e:expr) => (::regex::Regex::new($e).unwrap());
 }
@@ -94,6 +94,7 @@ macro_rules! bench_contains_vs_tw {
                 b.bytes = haystack.len() as u64;
             }
 
+            /*
             #[bench]
             pub fn regex_find(b: &mut Bencher) {
                 let haystack = black_box($hay);
@@ -104,6 +105,7 @@ macro_rules! bench_contains_vs_tw {
                 });
                 b.bytes = haystack.len() as u64;
             }
+            */
 
             #[cfg(feature = "jetscii")]
             #[bench]
@@ -555,16 +557,6 @@ pub fn find_byte_1(b: &mut Bencher) {
     b.iter(|| {
         let t = ::twoway::set::find_byte(needle as u8, &haystack);
         t
-    });
-    b.bytes = haystack.len() as u64;
-}
-
-#[bench]
-pub fn regex_2(b: &mut Bencher) {
-    let haystack = black_box(LONG);
-    let reg = regex!("(@|#)");
-    b.iter(|| {
-        reg.find(&haystack)
     });
     b.bytes = haystack.len() as u64;
 }
