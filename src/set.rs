@@ -1,4 +1,3 @@
-#![cfg(feature = "test-set")]
 use std::cmp;
 
 /*

@@ -14,6 +14,7 @@ mod tw;
 #[cfg(feature = "pcmp")]
 pub mod pcmp;
 pub mod bmh;
+#[cfg(feature = "test-set")]
 pub mod set;
 mod util;
 
