@@ -9,11 +9,12 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/bluss/twoway"
 documentation = "https://docs.rs/twoway/"
 
-keywords = ["substring-search", "string", "pcmpestri", "find"]
+keywords = ["substring-search", "string", "pcmpestri", "find", "no_std"]
+categories = ["algorithms", "no-std"]
 
 [dependencies]
-memchr = "2.0"
-unchecked-index = { version = "0.2", optional = true }
+memchr = { version = "2.0", default-features = false }
+unchecked-index = { version = "0.2.2", optional = true }
 jetscii = {version = "0.3", features= ["unstable"], optional = true }
 galil-seiferas = { version = "0.1.1", optional = true }
 
@@ -27,7 +28,11 @@ rand = "0.3.10"
 quickcheck = { version = "0.4", default-features = false }
 
 [features]
-# pcmpestri
+# stable and pcmp support: opting out of using std, becoming no_std
+default = ["use_std"]
+use_std = ["memchr/use_std"]
+
+# pcmpestri, requires nightly
 pcmp = ["unchecked-index"]
 
 # Internal features for testing & benchmarking & development

@@ -1,5 +1,10 @@
+#![cfg_attr(not(test), no_std)]
 #![cfg_attr(feature = "pattern", feature(pattern))]
 #![cfg_attr(feature = "pcmp", feature(asm))]
+
+#[cfg(not(test))]
+extern crate core as std;
+
 use std::cmp;
 use std::usize;
 
