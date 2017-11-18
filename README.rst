@@ -35,6 +35,11 @@ Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version (onl
 Recent Changes
 --------------
 
+- 0.1.7
+
+  - The crate is optionally ``no_std``. Regular and ``pcmp`` both support this
+    mode.
+
 - 0.1.6
 
   - The hidden and internal test module set, technically pub, was removed from
