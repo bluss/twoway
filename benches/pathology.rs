@@ -10,6 +10,7 @@ extern crate itertools;
 extern crate odds;
 #[cfg(feature = "benchmarks")]
 extern crate galil_seiferas;
+extern crate unchecked_index;
 
 extern crate twoway;
 
@@ -23,47 +24,63 @@ pub use twoway::{Str};
 use std::str::pattern::{Pattern, Searcher, ReverseSearcher};
 use test::{Bencher, black_box};
 
-pub fn contains(hay: &str, n: &str) -> bool {
-    Str(n).into_searcher(hay).next_match().is_some()
+use twoway::find_str as tw_find;
+use twoway::rfind_str as tw_rfind;
+
+pub fn is_prefix(text: &str, pattern: &str) -> bool {
+    Str(pattern).is_prefix_of(text)
 }
 
-pub fn is_prefix(hay: &str, n: &str) -> bool {
-    Str(n).is_prefix_of(hay)
-}
-
-pub fn contains_rev(hay: &str, n: &str) -> bool {
-    Str(n).into_searcher(hay).next_match_back().is_some()
-}
-
-pub fn memmem(hay: &str, n: &str) -> bool {
+pub fn memmem(text: &str, pattern: &str) -> bool {
     #[allow(improper_ctypes)]
-    extern { fn memmem(s1: *const u8, m: usize, s2: *const u8, n: usize) -> *const u8; }
+    extern { fn memmem(s1: *const u8, m: usize, s2: *const u8, pattern: usize) -> *const u8; }
     unsafe {
-        memmem(hay.as_ptr(),
-               hay.len(),
-               n.as_ptr(),
-               n.len()) != 0 as *mut u8
+        memmem(text.as_ptr(),
+               text.len(),
+               pattern.as_ptr(),
+               pattern.len()) != 0 as *mut u8
     }
 
 }
 
+macro_rules! get {
+    ($slice:expr, $index:expr) => {
+        unsafe { ::unchecked_index::get_unchecked(&$slice, $index) }
+    }
+}
+
 fn brute_force<T: Eq>(text: &[T], pattern: &[T]) -> Option<usize> {
-    if pattern.len() <= text.len() {
-        let n = text.len();
-        let m = pattern.len();
-        for i in 0..n - m + 1 {
-            if text[i..i + m] == *pattern {
-                return Some(i);
+    let n = text.len();
+    let m = pattern.len();
+    if n < m {
+        return None;
+    }
+    'outer: for i in 0..n - m + 1 {
+
+        /* to use memcmp:
+         * it's a tradeoff; memcmp is faster with more pathological-y inputs!
+         * for relistic inputs where we quickly find a mismatch at most
+         * postions, it's faster using just single element get.
+        if get!(text, i .. i + m) == pattern {
+            return Some(i);
+        }
+        */
+
+        for j in 0..m {
+            if get!(text, i + j) != get!(pattern, j) {
+                continue 'outer;
             }
         }
+        return Some(i);
     }
     None
 }
 
+
 macro_rules! bench_contains_vs_tw {
     ($name: ident, $hay: expr, $n: expr) => {
         pub mod $name {
-            use super::{test, contains, contains_rev,
+            use super::{test, tw_find, tw_rfind,
                 LONG,
                 LONG_CY,
             };
@@ -177,25 +194,13 @@ macro_rules! bench_contains_vs_tw {
             }
 
             #[bench]
-            pub fn find_bytes(b: &mut Bencher) {
-                let haystack = $hay;
-                let needle = $n;
-                b.iter(|| {
-                    let needle = test::black_box(&needle);
-                    let haystack = test::black_box(&haystack);
-                    test::black_box(::twoway::find_str(haystack, needle));
-                });
-                b.bytes = haystack.len() as u64;
-            }
-
-            #[bench]
             pub fn twoway_find(b: &mut Bencher) {
                 let haystack = $hay;
                 let needle = $n;
                 b.iter(|| {
                     let needle = test::black_box(&needle);
                     let haystack = test::black_box(&haystack);
-                    test::black_box(contains(haystack, needle));
+                    test::black_box(tw_find(haystack, needle));
                 });
                 b.bytes = haystack.len() as u64;
             }
@@ -233,7 +238,7 @@ macro_rules! bench_contains_vs_tw {
                 b.iter(|| {
                     let needle = test::black_box(&needle);
                     let haystack = test::black_box(&haystack);
-                    test::black_box(contains_rev(haystack, needle));
+                    test::black_box(tw_rfind(haystack, needle));
                 });
                 b.bytes = haystack.len() as u64;
             }
@@ -262,8 +267,6 @@ macro_rules! bench_contains_vs_tw {
                 });
                 b.bytes = needle.len() as u64;
             }
-            /*
-            */
 
             /*
             #[bench]
@@ -413,61 +416,61 @@ bench_contains_vs_tw!(short_3let_cy,
     "коэ");
 
 bench_contains_vs_tw!(naive,
-    "a".rep(250),
+    "a".repeat(250),
     "aaaaaaaab");
 
 bench_contains_vs_tw!(naive_rev,
-    "a".rep(250),
+    "a".repeat(250),
     "baaaaaaaa");
 
 bench_contains_vs_tw!(naive_longpat,
-    "a".rep(100_000),
-    "a".rep(24).append("b"));
+    "a".repeat(100_000),
+    "a".repeat(24).append("b"));
 
 bench_contains_vs_tw!(naive_longpat_reversed,
-    "a".rep(100_000),
-    "b".append(&"a".rep(24)));
+    "a".repeat(100_000),
+    "b".append(&"a".repeat(24)));
 
 bench_contains_vs_tw!(bb_in_aa,
-    "a".rep(100_000),
-    "b".rep(100));
+    "a".repeat(100_000),
+    "b".repeat(100));
 
 bench_contains_vs_tw!(aaab_in_aab,
-    "aab".rep(100_000),
-    "aaab".rep(100));
+    "aab".repeat(100_000),
+    "aaab".repeat(100));
 
 bench_contains_vs_tw!(periodic2,
-    "bb".append(&"ab".rep(99)).rep(100),
-    "ab".rep(100));
+    "bb".append(&"ab".repeat(99)).repeat(100),
+    "ab".repeat(100));
 
 bench_contains_vs_tw!(periodic5,
-    "bacba".rep(39).append("bbbbb").rep(40),
-    "bacba".rep(40));
+    "bacba".repeat(39).append("bbbbb").repeat(40),
+    "bacba".repeat(40));
 
 // This one is two-way specific
 bench_contains_vs_tw!(pathological_two_way,
-    "dac".rep(20_000),
+    "dac".repeat(20_000),
     "bac");
 
 // This one is two-way specific
 bench_contains_vs_tw!(pathological_two_way_rev,
-    "cad".rep(20_000),
+    "cad".repeat(20_000),
     "cab");
 
 bench_contains_vs_tw!(bbbaaa,
-    "aab".rep(100_000),
-    "b".rep(100) + &"a".rep(100));
+    "aab".repeat(100_000),
+    "b".repeat(100) + &"a".repeat(100));
 
 bench_contains_vs_tw!(aaabbb,
-    "aab".rep(100_000),
-    "a".rep(100) + &"b".rep(100));
+    "aab".repeat(100_000),
+    "a".repeat(100) + &"b".repeat(100));
 
 bench_contains_vs_tw!(allright,
-    "allrightagtogether".rep(10_000),
+    "allrightagtogether".repeat(10_000),
      "allrightaltogether");
 
 bench_contains_vs_tw!(gllright,
-    "gllrightaltogether".rep(10_000),
+    "gllrightaltogether".repeat(10_000),
      "allrightaltogether");
 
 

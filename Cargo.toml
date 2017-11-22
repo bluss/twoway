@@ -20,11 +20,12 @@ galil-seiferas = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
 itertools = "0.7.0"
-odds = "0.2"
+odds = { version = "0.3", features = ["std-string"] }
 macro-attr = "0.2"
 newtype_derive = "0.1"
 rand = "0.3.10"
 quickcheck = { version = "0.4", default-features = false }
+unchecked-index = { version = "0.2.2" }
 
 [features]
 # stable and pcmp support: opting out of using std, becoming no_std
@@ -40,9 +41,6 @@ test-set = []
 benchmarks = ["galil-seiferas", "pattern"]
 all = ["jetscii", "pcmp", "pattern", "test-set"]
 
-[profile.release]
-[profile.bench]
-debug = true
 
 [package.metadata.release]
 no-dev-version = true
