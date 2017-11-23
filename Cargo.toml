@@ -20,7 +20,7 @@ galil-seiferas = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
 itertools = "0.7.0"
-odds = { version = "0.3", features = ["std-string"] }
+odds = { version = "0.2.26" }
 macro-attr = "0.2"
 newtype_derive = "0.1"
 rand = "0.3.10"
