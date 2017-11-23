@@ -7,7 +7,7 @@ matrix:
     - rust: beta
     - rust: nightly
       env:
-       - FEATURES='all'
+       - FEATURES='all benchmarks'
        - BENCH=1
     - rust: nightly
       env:
