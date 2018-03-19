@@ -9,7 +9,7 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/bluss/twoway"
 documentation = "https://docs.rs/twoway/"
 
-keywords = ["substring-search", "string", "pcmpestri", "find", "no_std"]
+keywords = ["substring-search", "string", "pcmpestri", "find", "memmem"]
 categories = ["algorithms", "no-std"]
 
 [dependencies]
