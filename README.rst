@@ -35,6 +35,11 @@ Use cargo feature ``pcmp`` to enable SSE4.2 / pcmpestri accelerated version (onl
 Recent Changes
 --------------
 
+- 0.1.8
+
+  - Tweak crate keywords by @tari
+  - Only testing and benchmarking changes otherwise (no changes to the crate itself)
+
 - 0.1.7
 
   - The crate is optionally ``no_std``. Regular and ``pcmp`` both support this
