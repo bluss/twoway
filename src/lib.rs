@@ -47,6 +47,7 @@ pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
 ///
 /// Uses the SSE42 version if it is compiled in.
 #[cfg(not(feature = "pcmp"))]
+#[inline]
 pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
     if pattern.is_empty() {
         Some(0)
@@ -80,6 +81,7 @@ pub fn rfind_str(text: &str, pattern: &str) -> Option<usize> {
 ///
 /// As of this writing, this function uses the two way algorithm
 /// in pure rust (with no SSE4.2 support).
+#[inline]
 pub fn rfind_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
     if pattern.is_empty() {
         Some(text.len())
@@ -160,6 +162,7 @@ struct EmptyNeedle {
 }
 
 impl<'a, 'b> StrSearcher<'a, 'b> {
+    #[inline]
     pub fn new(haystack: &'a str, needle: &'b str) -> StrSearcher<'a, 'b> {
         if needle.is_empty() {
             StrSearcher {
@@ -186,6 +189,7 @@ impl<'a, 'b> StrSearcher<'a, 'b> {
 
 #[cfg(feature = "pattern")]
 unsafe impl<'a, 'b> Searcher<'a> for StrSearcher<'a, 'b> {
+    #[inline]
     fn haystack(&self) -> &'a str { self.haystack }
 
     #[inline]
@@ -432,6 +436,7 @@ pub struct TwoWaySearcher {
 
 */
 impl TwoWaySearcher {
+    #[inline]
     pub fn new(needle: &[u8], end: usize) -> TwoWaySearcher {
         let (crit_pos_false, period_false) = TwoWaySearcher::maximal_suffix(needle, false);
         let (crit_pos_true, period_true) = TwoWaySearcher::maximal_suffix(needle, true);
@@ -728,6 +733,7 @@ impl TwoWaySearcher {
     // a critical factorization.
     //
     // For long period cases, the resulting period is not exact (it is too short).
+    #[inline]
     pub fn reverse_maximal_suffix(arr: &[u8], known_period: usize,
                                   order_greater: bool) -> usize
     {

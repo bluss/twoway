@@ -53,6 +53,7 @@ fn repeat_byte(b: u8) -> usize {
     rep
 }
 
+#[inline]
 pub fn find_byte(x: u8, text: &[u8]) -> Option<usize> {
     let len = text.len();
     let ptr = text.as_ptr();
@@ -105,6 +106,7 @@ fn test_find_byte() {
     assert_eq!(find_byte(b'w', longer.as_bytes()), longer.find('w'));
 }
 
+#[inline]
 pub fn rfind_byte(x: u8, text: &[u8]) -> Option<usize> {
     // Scan for a single byte value by reading two `usize` words at a time.
     //
