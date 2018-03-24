@@ -103,22 +103,6 @@ unsafe fn pcmpestrm_eq_each(text: *const u8, offset: usize, text_len: usize,
 }
 
 
-/// Return critical position, period.
-/// critical position is zero-based
-///
-/// Note: If the period is long, the correct period is not returned.
-/// The approximation to a long period must be computed separately.
-#[inline(never)]
-fn crit_period(pat: &[u8]) -> (usize, usize) {
-    let (i, p) = TwoWaySearcher::maximal_suffix(pat, false);
-    let (j, q) = TwoWaySearcher::maximal_suffix(pat, true);
-    if i >= j {
-        (i, p)
-    } else {
-        (j, q)
-    }
-}
-
 /// Search for first possible match of `pat` -- might be just a byte
 /// Return `(pos, length)` length of match
 #[cfg(test)]
@@ -347,7 +331,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
     //
 
     // `memory` is the number of bytes of the left half that we already know
-    let (crit_pos, mut period) = crit_period(pat);
+    let (crit_pos, mut period) = TwoWaySearcher::crit_params(pat);
     let mut memory;
 
     if &pat[..crit_pos] == &pat[period.. period + crit_pos] {

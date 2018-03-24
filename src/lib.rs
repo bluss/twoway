@@ -433,15 +433,7 @@ pub struct TwoWaySearcher {
 */
 impl TwoWaySearcher {
     pub fn new(needle: &[u8], end: usize) -> TwoWaySearcher {
-        let (crit_pos_false, period_false) = TwoWaySearcher::maximal_suffix(needle, false);
-        let (crit_pos_true, period_true) = TwoWaySearcher::maximal_suffix(needle, true);
-
-        let (crit_pos, period) =
-            if crit_pos_false > crit_pos_true {
-                (crit_pos_false, period_false)
-            } else {
-                (crit_pos_true, period_true)
-            };
+        let (crit_pos, period) = TwoWaySearcher::crit_params(needle);
 
         // A particularly readable explanation of what's going on here can be found
         // in Crochemore and Rytter's book "Text Algorithms", ch 13. Specifically
@@ -496,6 +488,22 @@ impl TwoWaySearcher {
                 memory: usize::MAX, // Dummy value to signify that the period is long
                 memory_back: usize::MAX,
             }
+        }
+    }
+
+    /// Return the zero-based critical position and period of the provided needle.
+    /// 
+    /// The returned period is incorrect when the actual period is "long." In
+    /// that case the approximation must be computed separately.
+    #[inline(always)]
+    fn crit_params(needle: &[u8]) -> (usize, usize) {
+        let (crit_pos_false, period_false) = TwoWaySearcher::maximal_suffix(needle, false);
+        let (crit_pos_true, period_true) = TwoWaySearcher::maximal_suffix(needle, true);
+
+        if crit_pos_false > crit_pos_true {
+            (crit_pos_false, period_false)
+        } else {
+            (crit_pos_true, period_true)
         }
     }
 
