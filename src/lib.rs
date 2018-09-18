@@ -1,6 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(feature = "pattern", feature(pattern))]
-#![cfg_attr(feature = "pcmp", feature(asm))]
 
 #[cfg(not(test))]
 extern crate core as std;
@@ -492,7 +491,7 @@ impl TwoWaySearcher {
     }
 
     /// Return the zero-based critical position and period of the provided needle.
-    /// 
+    ///
     /// The returned period is incorrect when the actual period is "long." In
     /// that case the approximation must be computed separately.
     #[inline(always)]
@@ -913,7 +912,7 @@ fn test_contains() {
     assert!(contains(h, n));
     assert!(contains_rev(h, n));
 
-    let h = "\u{0}\u{0}\u{0}\u{0}"; 
+    let h = "\u{0}\u{0}\u{0}\u{0}";
     let n = "\u{0}";
     assert!(contains(h, n));
     assert!(contains_rev(h, n));

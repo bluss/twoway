@@ -25,10 +25,11 @@ fn zip<I, J>(i: I, j: J) -> Zip<I::IntoIter, J::IntoIter>
     i.into_iter().zip(j)
 }
 
-/// `pcmpestri` flags
-const EQUAL_ANY: u8 = 0b0000;
-const EQUAL_EACH: u8 = 0b1000;
-const EQUAL_ORDERED: u8 = 0b1100;
+#[cfg(target_arch = "x86")]
+use std::arch::x86::*;
+
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
 
 /// `pcmpestri`
 ///
@@ -42,27 +43,9 @@ unsafe fn pcmpestri_16(text: *const u8, offset: usize, text_len: usize,
                        needle_1: u64, needle_2: u64, needle_len: usize) -> u32 {
     //debug_assert!(text_len + offset <= text.len()); // saturates at 16
     //debug_assert!(needle_len <= 16); // saturates at 16
-    let res: u32;
-    // 0xC = 12, Equal Ordered comparison
-    //
-    // movlhps xmm0, xmm1  Move low word of xmm1 to high word of xmm0
-    asm!("movlhps $1, $2
-          pcmpestri $1, [$3 + $4], $5"
-         : // output operands
-         "={ecx}"(res)
-         : // input operands
-         "x"(needle_1),        // operand 1 = needle  `x` = sse register
-         "x"(needle_2),        // operand 1 = needle
-         "r"(text), // operand 2 pointer = haystack
-         "r"(offset),        // operand 2 offset
-         "i"(EQUAL_ORDERED),
-         "{rax}"(needle_len),// length of operand 1 = needle
-         "{rdx}"(text_len)   // length of operand 2 = haystack
-         : // clobbers
-         "cc"
-         : "intel" // options
-    );
-    res
+    let needle = _mm_set_epi64x(needle_2 as _, needle_1 as _);
+    let text = _mm_loadu_si128(text.offset(offset as _) as *const _);
+    _mm_cmpestri(needle, needle_len as _, text, text_len as _, _SIDD_CMP_EQUAL_ORDERED) as _
 }
 
 /// `pcmpestrm`
@@ -79,27 +62,10 @@ unsafe fn pcmpestrm_eq_each(text: *const u8, offset: usize, text_len: usize,
     // NOTE: needle *must* be readable for 16 bytes
     //debug_assert!(text_len + offset <= text.len()); // saturates at 16
     //debug_assert!(needle_len <= 16); // saturates at 16
-    let res: u64;
-    // 0xC = 12, Equal Ordered comparison
-    //
-    // movlhps xmm0, xmm1  Move low word of xmm1 to high word of xmm0
-    asm!("movdqu xmm0, [$1 + $2]
-          pcmpestrm xmm0, [$3 + $4], $5"
-         : // output operands
-         "={xmm0}"(res)
-         : // input operands
-         "r"(needle),         // operand 1 = needle
-         "r"(noffset),        // operand 1 = needle offset
-         "r"(text), // operand 2 pointer = haystack
-         "r"(offset),        // operand 2 offset
-         "i"(EQUAL_EACH),
-         "{rax}"(needle_len),// length of operand 1 = needle
-         "{rdx}"(text_len)   // length of operand 2 = haystack
-         : // clobbers
-         "cc"
-         : "intel" // options
-    );
-    res
+    let needle = _mm_loadu_si128(needle.offset(noffset as _) as *const _);
+    let text = _mm_loadu_si128(text.offset(offset as _) as *const _);
+    let mask = _mm_cmpestrm(needle, needle_len as _, text, text_len as _, _SIDD_CMP_EQUAL_EACH);
+    _mm_extract_epi64(mask, 0) as _
 }
 
 
@@ -527,7 +493,7 @@ fn pat128(pat: &[u8]) -> (u64, u64) {
 }
 
 /// Find longest shared prefix, return its length
-/// 
+///
 /// Alignment safe: works for any text, pat.
 pub fn shared_prefix(text: &[u8], pat: &[u8]) -> usize {
     let tp = text.as_ptr();
