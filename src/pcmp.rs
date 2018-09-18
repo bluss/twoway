@@ -65,7 +65,16 @@ unsafe fn pcmpestrm_eq_each(text: *const u8, offset: usize, text_len: usize,
     let needle = _mm_loadu_si128(needle.offset(noffset as _) as *const _);
     let text = _mm_loadu_si128(text.offset(offset as _) as *const _);
     let mask = _mm_cmpestrm(needle, needle_len as _, text, text_len as _, _SIDD_CMP_EQUAL_EACH);
-    _mm_extract_epi64(mask, 0) as _
+
+    #[cfg(target_arch = "x86")] {
+        let mut res: u64 = ::std::mem::uninitialized();
+        _mm_storel_epi64(&mut res, mask);
+        res
+    }
+
+    #[cfg(target_arch = "x86_64")] {
+        _mm_extract_epi64(mask, 0) as _
+    }
 }
 
 
