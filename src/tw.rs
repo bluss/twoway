@@ -302,19 +302,19 @@ fn test_find() {
 
 #[test]
 fn test_max_suf_pos() {
-    assert_eq!(2, compute_max_suf_pos((b"aab")));
+    assert_eq!(2, compute_max_suf_pos(b"aab"));
 
-    assert_eq!(2, compute_max_suf_pos((b"aabaa")));
+    assert_eq!(2, compute_max_suf_pos(b"aabaa"));
 
-    assert_eq!(0, compute_max_suf_pos((b"gcagagag")));
-    assert_eq!(2, compute_max_suf_pos((b"banana")));
+    assert_eq!(0, compute_max_suf_pos(b"gcagagag"));
+    assert_eq!(2, compute_max_suf_pos(b"banana"));
 }
 
 #[test]
 fn test_maxsuf_and_period() {
-    assert_eq!((2, 1), maxsuf_and_period((b"aab")));
-    assert_eq!((2, 3), maxsuf_and_period((b"aabaa")));
-    assert_eq!((0, 7), maxsuf_and_period((b"gcagagag")));
+    assert_eq!((2, 1), maxsuf_and_period(b"aab"));
+    assert_eq!((2, 3), maxsuf_and_period(b"aabaa"));
+    assert_eq!((0, 7), maxsuf_and_period(b"gcagagag"));
 }
 
 /*

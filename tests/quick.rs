@@ -291,7 +291,7 @@ fn test_search_steps() {
         let n = &b.0;
         let tws = StrSearcher::new(hay, n);
         // Make sure it covers the whole string
-        let mut search_steps = unfold(tws, |mut tws| {
+        let mut search_steps = unfold(tws, |tws| {
             match tws.next() {
                 SearchStep::Done => None,
                 otherwise => Some(otherwise),
@@ -323,7 +323,7 @@ fn test_search_steps_rev() {
         let n = &b.0;
         let tws = StrSearcher::new(hay, n);
         // Make sure it covers the whole string
-        let mut search_steps = unfold(tws, |mut tws| {
+        let mut search_steps = unfold(tws, |tws| {
             match tws.next_back() {
                 SearchStep::Done => None,
                 otherwise => Some(otherwise),
