@@ -27,9 +27,11 @@ use test::{Bencher, black_box};
 use twoway::find_str as tw_find;
 use twoway::rfind_str as tw_rfind;
 
+/*
 pub fn is_prefix(text: &str, pattern: &str) -> bool {
     Str(pattern).is_prefix_of(text)
 }
+*/
 
 pub fn memmem(text: &str, pattern: &str) -> bool {
     #[allow(improper_ctypes)]
@@ -535,7 +537,7 @@ pub fn rfind_char_1(b: &mut Bencher) {
         t
     });
     b.bytes = haystack.len() as u64;
-} 
+}
 
 #[cfg(feature = "test-set")]
 fn bench_data() -> Vec<u8> { vec![0u8; 256 * 1024] }
