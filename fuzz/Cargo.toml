@@ -13,9 +13,6 @@ path = ".."
 [dependencies.libfuzzer-sys]
 git = "https://github.com/rust-fuzz/libfuzzer-sys.git"
 
-[features]
-pcmp = ["twoway/pcmp"]
-
 # Prevent this from interfering with workspaces
 [workspace]
 members = ["."]

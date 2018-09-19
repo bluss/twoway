@@ -1,7 +1,7 @@
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(feature = "use_std"), no_std)]
 #![cfg_attr(feature = "pattern", feature(pattern))]
 
-#[cfg(not(test))]
+#[cfg(not(feature = "use_std"))]
 extern crate core as std;
 
 use std::cmp;
@@ -10,7 +10,7 @@ use std::usize;
 extern crate memchr;
 
 mod tw;
-#[cfg(feature = "pcmp")]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub mod pcmp;
 pub mod bmh;
 #[cfg(feature = "test-set")]
@@ -27,7 +27,7 @@ use std::str::pattern::{
 
 /// `find_str` finds the first ocurrence of `pattern` in the `text`.
 ///
-/// Uses the SSE42 version if it is compiled in.
+/// Uses the SSE42 version if it is available at runtime.
 #[inline]
 pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
     find_bytes(text.as_bytes(), pattern.as_bytes())
@@ -35,19 +35,11 @@ pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
 
 /// `find_bytes` finds the first ocurrence of `pattern` in the `text`.
 ///
-/// Uses the SSE42 version if it is compiled in.
-#[cfg(feature = "pcmp")]
-#[inline]
+/// Uses the SSE42 version if it is available at runtime.
 pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
-    pcmp::find(text, pattern)
-}
-
-/// `find_bytes` finds the first ocurrence of `pattern` in the `text`.
-///
-/// Uses the SSE42 version if it is compiled in.
-#[cfg(not(feature = "pcmp"))]
-pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
-    if pattern.is_empty() {
+    if cfg!(any(target_arch = "x86", target_arch = "x86_64")) && pcmp::is_supported() {
+        pcmp::find(text, pattern)
+    } else if pattern.is_empty() {
         Some(0)
     } else if pattern.len() == 1 {
         memchr::memchr(pattern[0], text)

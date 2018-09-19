@@ -164,7 +164,6 @@ macro_rules! bench_contains_vs_tw {
             }
             */
 
-            #[cfg(feature = "pcmp")]
             #[bench]
             pub fn pcmp_find(b: &mut Bencher) {
                 let haystack = black_box($hay);

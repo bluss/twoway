@@ -283,6 +283,15 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
     }
 }
 
+/// `is_supported` checks whether necessary SSE 4.2 feature is supported on current CPU.
+pub fn is_supported() -> bool {
+    if cfg!(feature = "use_std") {
+        is_x86_feature_detected!("sse4.2")
+    } else {
+        cfg!(target_feature = "sse4.2")
+    }
+}
+
 /// `find` finds the first ocurrence of `pattern` in the `text`.
 ///
 /// This is the SSE42 accelerated version.
