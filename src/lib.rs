@@ -37,9 +37,12 @@ pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
 ///
 /// Uses the SSE42 version if it is available at runtime.
 pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
-    if cfg!(any(target_arch = "x86", target_arch = "x86_64")) && pcmp::is_supported() {
-        pcmp::find(text, pattern)
-    } else if pattern.is_empty() {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        if pcmp::is_supported() {
+            return pcmp::find(text, pattern);
+        }
+    }
+    if pattern.is_empty() {
         Some(0)
     } else if pattern.len() == 1 {
         memchr::memchr(pattern[0], text)
