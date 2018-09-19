@@ -37,7 +37,7 @@ use std::arch::x86_64::*;
 /// PCMPESTRI xmm1, xmm2/m128, imm8
 ///
 /// Return value: least index for start of (partial) match, (16 if no match).
-#[inline(always)]
+#[target_feature(enable = "sse4.2")]
 unsafe fn pcmpestri_16(text: *const u8, offset: usize, text_len: usize,
                        needle: __m128i, needle_len: usize) -> u32 {
     //debug_assert!(text_len + offset <= text.len()); // saturates at 16
@@ -53,7 +53,7 @@ unsafe fn pcmpestri_16(text: *const u8, offset: usize, text_len: usize,
 /// PCMPESTRM xmm1, xmm2/m128, imm8
 ///
 /// Return value: bitmask in the 16 lsb of the return value.
-#[inline(always)]
+#[target_feature(enable = "sse4.2")]
 unsafe fn pcmpestrm_eq_each(text: *const u8, offset: usize, text_len: usize,
                             needle: *const u8, noffset: usize, needle_len: usize) -> u64 {
     // NOTE: text *must* be readable for 16 bytes
@@ -83,26 +83,26 @@ fn first_start_of_match(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
     // not safe for text that is non aligned and ends at page boundary
     let patl = pat.len();
     assert!(patl <= 16);
-    first_start_of_match_inner(text, pat, pat128(pat))
+    unsafe { first_start_of_match_inner(text, pat, pat128(pat)) }
 }
 
 /// Safe wrapper around pcmpestri to find first match of `pat` in `text`.
 /// `p` contains the first two words of `pat` and *must* match.
 /// Length given by length of `pat`, only first 16 bytes considered.
-fn first_start_of_match_inner(text: &[u8], pat: &[u8], p: __m128i) -> Option<(usize, usize)> {
+#[target_feature(enable = "sse4.2")]
+unsafe fn first_start_of_match_inner(text: &[u8], pat: &[u8], p: __m128i) -> Option<(usize, usize)> {
     // align the text pointer
     let tp = text.as_ptr();
     let tp_align_offset = tp as usize & 0xF;
     let init_len;
     let tp_aligned;
-    unsafe {
-        if tp_align_offset != 0 {
-            init_len = 16 - tp_align_offset;
-            tp_aligned = tp.offset(-(tp_align_offset as isize));
-        } else {
-            init_len = 0;
-            tp_aligned = tp;
-        };
+
+    if tp_align_offset != 0 {
+        init_len = 16 - tp_align_offset;
+        tp_aligned = tp.offset(-(tp_align_offset as isize));
+    } else {
+        init_len = 0;
+        tp_aligned = tp;
     }
 
     let patl = pat.len();
@@ -129,15 +129,13 @@ fn first_start_of_match_inner(text: &[u8], pat: &[u8], p: __m128i) -> Option<(us
         offset += 16;
     }
     while text.len() >= offset - tp_align_offset + patl {
-        unsafe {
-            let tlen = text.len() - (offset - tp_align_offset);
-            let ret = pcmpestri_16(tp_aligned, offset, tlen, p, patl) as usize;
-            if ret == 16 {
-                offset += 16;
-            } else {
-                let match_len = cmp::min(patl, 16 - ret);
-                return Some((offset - tp_align_offset + ret, match_len));
-            }
+        let tlen = text.len() - (offset - tp_align_offset);
+        let ret = pcmpestri_16(tp_aligned, offset, tlen, p, patl) as usize;
+        if ret == 16 {
+            offset += 16;
+        } else {
+            let match_len = cmp::min(patl, 16 - ret);
+            return Some((offset - tp_align_offset + ret, match_len));
         }
     }
 
@@ -213,7 +211,8 @@ fn find_2byte_pat(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
 }
 
 /// Simd text search optimized for short patterns (<= 8 bytes)
-fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
+#[target_feature(enable = "sse4.2")]
+unsafe fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
     debug_assert!(pat.len() <= 8);
     /*
     if pat.len() == 2 {
@@ -231,7 +230,7 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
             break;
         }
         // find the next occurence
-        match unsafe { first_start_of_match_unaligned(&safetext[pos..], pat.len(), r) } {
+        match first_start_of_match_unaligned(&safetext[pos..], pat.len(), r) {
             None => break, // no matches
             Some((mpos, mlen)) => {
                 pos += mpos;
@@ -292,18 +291,22 @@ pub fn is_supported() -> bool {
 ///
 /// This is the SSE42 accelerated version.
 pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
-    let pat = pattern;
-    if pat.len() == 0 {
+    assert!(is_supported());
+
+    if pattern.is_empty() {
         return Some(0);
-    }
-
-    if text.len() < pat.len() {
+    } else if text.len() < pattern.len() {
         return None;
+    } else if pattern.len() == 1 {
+        return memchr::memchr(pattern[0], text);
+    } else {
+        unsafe { find_inner(text, pattern) }
     }
+}
 
-    if pat.len() == 1 {
-        return memchr::memchr(pat[0], text);
-    } else if pat.len() <= 6 {
+#[target_feature(enable = "sse4.2")]
+pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
+    if pat.len() <= 6 {
         return find_short_pat(text, pat);
     }
 
@@ -341,13 +344,13 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
             }
             // find the next occurence of the right half
             let start = crit_pos;
-            match unsafe { first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) } {
+            match first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) {
                 None => break, // no matches
                 Some((mpos, mlen)) => {
                     pos += mpos;
                     let mut pfxlen = mlen;
                     if pfxlen < right.len() {
-                        pfxlen += shared_prefix(&text[pos + start + mlen..], &right[mlen..]);
+                        pfxlen += shared_prefix_inner(&text[pos + start + mlen..], &right[mlen..]);
                     }
                     if pfxlen != right.len() {
                         // partial match
@@ -379,7 +382,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
             //println!("memory trace pos={}, memory={}", pos, memory);
             let mut pfxlen = if memory == 0 {
                 let start = crit_pos;
-                match unsafe { first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) } {
+                match first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) {
                     None => break, // no matches
                     Some((mpos, mlen)) => {
                         pos += mpos;
@@ -390,7 +393,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
                 memory - crit_pos
             };
             if pfxlen < right.len() {
-                pfxlen += shared_prefix(&text[pos + crit_pos + pfxlen..], &right[pfxlen..]);
+                pfxlen += shared_prefix_inner(&text[pos + crit_pos + pfxlen..], &right[pfxlen..]);
             }
             if pfxlen != right.len() {
                 // partial match
@@ -427,7 +430,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
                 pos += mpos;
                 let mut pfxlen = mlen;
                 if pfxlen < right.len() {
-                    pfxlen += shared_prefix(&text[pos + start + mlen..], &right[mlen..]);
+                    pfxlen += shared_prefix_inner(&text[pos + start + mlen..], &right[mlen..]);
                 }
                 if pfxlen != right.len() {
                     // partial match
@@ -496,44 +499,49 @@ fn pat128(pat: &[u8]) -> __m128i {
 ///
 /// Alignment safe: works for any text, pat.
 pub fn shared_prefix(text: &[u8], pat: &[u8]) -> usize {
+    assert!(is_supported());
+
+    unsafe { shared_prefix_inner(text, pat) }
+}
+
+#[target_feature(enable = "sse4.2")]
+unsafe fn shared_prefix_inner(text: &[u8], pat: &[u8]) -> usize {
     let tp = text.as_ptr();
     let tlen = text.len();
     let pp = pat.as_ptr();
     let plen = pat.len();
     let len = cmp::min(tlen, plen);
 
-    unsafe {
-        // TODO: do non-aligned prefix manually too(?) aligned text or pat..
-        // all but the end we can process with pcmpestrm
-        let initial_part = len.saturating_sub(16);
-        let mut prefix_len = 0;
-        let mut offset = 0;
-        while offset < initial_part {
-            let initial_tail = initial_part - offset;
-            let mask = pcmpestrm_eq_each(tp, offset, initial_tail, pp, offset, initial_tail);
-            // find zero in the first 16 bits
-            if mask != 0xffff {
-                let first_bit_set = (mask ^ 0xffff).trailing_zeros() as usize;
-                prefix_len += first_bit_set;
-                return prefix_len;
-            } else {
-                prefix_len += cmp::min(initial_tail, 16);
-            }
-            offset += 16;
+    // TODO: do non-aligned prefix manually too(?) aligned text or pat..
+    // all but the end we can process with pcmpestrm
+    let initial_part = len.saturating_sub(16);
+    let mut prefix_len = 0;
+    let mut offset = 0;
+    while offset < initial_part {
+        let initial_tail = initial_part - offset;
+        let mask = pcmpestrm_eq_each(tp, offset, initial_tail, pp, offset, initial_tail);
+        // find zero in the first 16 bits
+        if mask != 0xffff {
+            let first_bit_set = (mask ^ 0xffff).trailing_zeros() as usize;
+            prefix_len += first_bit_set;
+            return prefix_len;
+        } else {
+            prefix_len += cmp::min(initial_tail, 16);
         }
-        // so one block left, the last (up to) 16 bytes
-        // unchecked slicing .. we don't want panics in this function
-        let text_suffix = get_unchecked(text, prefix_len..len);
-        let pat_suffix = get_unchecked(pat, prefix_len..len);
-        for (&a, &b) in zip(text_suffix, pat_suffix) {
-            if a != b {
-                break;
-            }
-            prefix_len += 1;
-        }
-
-        prefix_len
+        offset += 16;
     }
+    // so one block left, the last (up to) 16 bytes
+    // unchecked slicing .. we don't want panics in this function
+    let text_suffix = get_unchecked(text, prefix_len..len);
+    let pat_suffix = get_unchecked(pat, prefix_len..len);
+    for (&a, &b) in zip(text_suffix, pat_suffix) {
+        if a != b {
+            break;
+        }
+        prefix_len += 1;
+    }
+
+    prefix_len
 }
 
 #[test]

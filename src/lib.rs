@@ -37,16 +37,18 @@ pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
 ///
 /// Uses the SSE42 version if it is available at runtime.
 pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        if pcmp::is_supported() {
-            return pcmp::find(text, pattern);
-        }
-    }
     if pattern.is_empty() {
         Some(0)
+    } else if text.len() < pattern.len() {
+        return None;
     } else if pattern.len() == 1 {
         memchr::memchr(pattern[0], text)
     } else {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            if pcmp::is_supported() {
+                return unsafe { pcmp::find_inner(text, pattern) };
+            }
+        }
         let mut searcher = TwoWaySearcher::new(pattern, text.len());
         let is_long = searcher.memory == usize::MAX;
         // write out `true` and `false` cases to encourage the compiler
