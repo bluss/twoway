@@ -87,9 +87,7 @@ unsafe fn pcmpestrm_eq_each(text: *const u8, offset: usize, text_len: usize,
     let mask = _mm_cmpestrm(needle, needle_len as _, text, text_len as _, _SIDD_CMP_EQUAL_EACH);
 
     #[cfg(target_arch = "x86")] {
-        let mut res: u64 = ::std::mem::uninitialized();
-        _mm_storel_epi64(&mut res, mask);
-        res
+        _mm_extract_epi32(mask, 0) as u64 | (_mm_extract_epi32(mask, 1) as (u64) << 32)
     }
 
     #[cfg(target_arch = "x86_64")] {
