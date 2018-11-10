@@ -103,69 +103,41 @@ fn first_start_of_match(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
     // not safe for text that is non aligned and ends at page boundary
     let patl = pat.len();
     assert!(patl <= 16);
-    unsafe { first_start_of_match_inner(text, pat, pat128(pat)) }
+    unsafe { first_start_of_match_mask(text, pat.len(), pat128(pat)) }
 }
 
-/// Safe wrapper around pcmpestri to find first match of `pat` in `text`.
-/// `p` contains the first two words of `pat` and *must* match.
-/// Length given by length of `pat`, only first 16 bytes considered.
+/// Safe wrapper around pcmpestri to find first match of `p` in `text`.
+/// safe to search unaligned for first start of match
+///
+/// the end of text an be close (within 16 bytes) of a page boundary
 #[target_feature(enable = "sse4.2")]
-unsafe fn first_start_of_match_inner(text: &[u8], pat: &[u8], p: __m128i) -> Option<(usize, usize)> {
-    // align the text pointer
+unsafe fn first_start_of_match_mask(text: &[u8], pat_len: usize, p: __m128i) -> Option<(usize, usize)> {
     let tp = text.as_ptr();
-    let tp_align_offset = tp as usize & 0xF;
-    let init_len;
-    let tp_aligned;
-
-    if tp_align_offset != 0 {
-        init_len = 16 - tp_align_offset;
-        tp_aligned = tp.offset(-(tp_align_offset as isize));
-    } else {
-        init_len = 0;
-        tp_aligned = tp;
-    }
-
-    let patl = pat.len();
-    debug_assert!(patl <= 16);
+    debug_assert!(pat_len <= 16);
 
     let mut offset = 0;
 
-    // search the unaligned prefix first
-    if init_len > 0 {
-        for start in 0..cmp::min(init_len, text.len()) {
-            if text[start] != pat[0] {
-                continue;
-            }
-            let mut mlen = 1;
-            for (&a, &b) in zip(&text[start + 1..], &pat[1..]) {
-                if a != b {
-                    mlen = 0;
-                    break;
-                }
-                mlen += 1;
-            }
-            return Some((start, mlen))
-        }
-        offset += 16;
-    }
-    while text.len() >= offset - tp_align_offset + patl {
-        let tlen = text.len() - (offset - tp_align_offset);
-        let ret = pcmpestri_16_mask(tp_aligned, offset, tlen, p, patl) as usize;
+    while text.len() >= offset + pat_len {
+        let tlen = text.len() - offset;
+        let ret = pcmpestri_16_mask(tp, offset, tlen, p, pat_len) as usize;
         if ret == 16 {
             offset += 16;
         } else {
-            let match_len = cmp::min(patl, 16 - ret);
-            return Some((offset - tp_align_offset + ret, match_len));
+            let match_len = cmp::min(pat_len, 16 - ret);
+            return Some((offset + ret, match_len));
         }
     }
 
     None
 }
 
+
+/// Safe wrapper around pcmpestri to find first match of `p` in `text`.
 /// safe to search unaligned for first start of match
 ///
 /// unsafe because the end of text must not be close (within 16 bytes) of a page boundary
-unsafe fn first_start_of_match_unaligned(text: &[u8], pat_len: usize, p: __m128i) -> Option<(usize, usize)> {
+#[target_feature(enable = "sse4.2")]
+unsafe fn first_start_of_match_nomask(text: &[u8], pat_len: usize, p: __m128i) -> Option<(usize, usize)> {
     let tp = text.as_ptr();
     debug_assert!(pat_len <= 16);
     debug_assert!(pat_len <= text.len());
@@ -250,7 +222,7 @@ unsafe fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
             break;
         }
         // find the next occurence
-        match first_start_of_match_unaligned(&safetext[pos..], pat.len(), r) {
+        match first_start_of_match_nomask(&safetext[pos..], pat.len(), r) {
             None => break, // no matches
             Some((mpos, mlen)) => {
                 pos += mpos;
@@ -276,7 +248,7 @@ unsafe fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
             return None;
         }
         // find the next occurence
-        match first_start_of_match_inner(&text[pos..], pat, r) {
+        match first_start_of_match_mask(&text[pos..], pat.len(), r) {
             None => return None, // no matches
             Some((mpos, mlen)) => {
                 pos += mpos;
@@ -363,7 +335,7 @@ pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
             }
             // find the next occurence of the right half
             let start = crit_pos;
-            match first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) {
+            match first_start_of_match_nomask(&safetext[pos + start..], right16.len(), r) {
                 None => break, // no matches
                 Some((mpos, mlen)) => {
                     pos += mpos;
@@ -401,7 +373,7 @@ pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
             //println!("memory trace pos={}, memory={}", pos, memory);
             let mut pfxlen = if memory == 0 {
                 let start = crit_pos;
-                match first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) {
+                match first_start_of_match_nomask(&safetext[pos + start..], right16.len(), r) {
                     None => break, // no matches
                     Some((mpos, mlen)) => {
                         pos += mpos;
@@ -443,7 +415,7 @@ pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
         }
         // find the next occurence of the right half
         let start = crit_pos;
-        match first_start_of_match_inner(&text[pos + start..], right16, r) {
+        match first_start_of_match_mask(&text[pos + start..], right16.len(), r) {
             None => return None, // no matches
             Some((mpos, mlen)) => {
                 pos += mpos;
