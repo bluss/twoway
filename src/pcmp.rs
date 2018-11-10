@@ -223,7 +223,10 @@ unsafe fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
         }
         // find the next occurence
         match first_start_of_match_nomask(&safetext[pos..], pat.len(), r) {
-            None => break, // no matches
+            None => {
+                pos = cmp::max(pos, safetext.len() - pat.len());
+                break // no matches
+            }
             Some((mpos, mlen)) => {
                 pos += mpos;
                 if mlen < pat.len() {
@@ -336,7 +339,10 @@ pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
             // find the next occurence of the right half
             let start = crit_pos;
             match first_start_of_match_nomask(&safetext[pos + start..], right16.len(), r) {
-                None => break, // no matches
+                None => {
+                    pos = cmp::max(pos, safetext.len() - pat.len());
+                    break // no matches
+                }
                 Some((mpos, mlen)) => {
                     pos += mpos;
                     let mut pfxlen = mlen;
@@ -374,7 +380,10 @@ pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
             let mut pfxlen = if memory == 0 {
                 let start = crit_pos;
                 match first_start_of_match_nomask(&safetext[pos + start..], right16.len(), r) {
-                    None => break, // no matches
+                    None => {
+                        pos = cmp::max(pos, safetext.len() - pat.len());
+                        break // no matches
+                    }
                     Some((mpos, mlen)) => {
                         pos += mpos;
                         mlen
@@ -416,7 +425,7 @@ pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
         // find the next occurence of the right half
         let start = crit_pos;
         match first_start_of_match_mask(&text[pos + start..], right16.len(), r) {
-            None => return None, // no matches
+            None => return None,
             Some((mpos, mlen)) => {
                 pos += mpos;
                 let mut pfxlen = mlen;
@@ -459,7 +468,8 @@ fn test_find() {
         for window in longer.as_bytes().windows(wsz) {
             let str_find = longer.find(::std::str::from_utf8(window).unwrap());
             assert!(str_find.is_some());
-            assert_eq!(find(longer.as_bytes(), window), str_find);
+            assert_eq!(find(longer.as_bytes(), window), str_find, "{:?} {:?}",
+                       longer, ::std::str::from_utf8(window));
         }
     }
 
