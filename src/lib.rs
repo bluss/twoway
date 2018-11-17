@@ -50,7 +50,10 @@ pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
         memchr::memchr(pattern[0], text)
     } else {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            if pcmp::is_supported() {
+            let compile_time_disable = option_env!("TWOWAY_TEST_DISABLE_PCMP")
+                .map(|s| !s.is_empty())
+                .unwrap_or(false);
+            if !compile_time_disable && pcmp::is_supported() {
                 return unsafe { pcmp::find_inner(text, pattern) };
             }
         }
