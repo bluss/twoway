@@ -291,7 +291,7 @@ fn test_search_steps() {
         let n = &b.0;
         let tws = StrSearcher::new(hay, n);
         // Make sure it covers the whole string
-        let mut search_steps = unfold(tws, |mut tws| {
+        let mut search_steps = unfold(tws, |tws| {
             match tws.next() {
                 SearchStep::Done => None,
                 otherwise => Some(otherwise),
@@ -323,7 +323,7 @@ fn test_search_steps_rev() {
         let n = &b.0;
         let tws = StrSearcher::new(hay, n);
         // Make sure it covers the whole string
-        let mut search_steps = unfold(tws, |mut tws| {
+        let mut search_steps = unfold(tws, |tws| {
             match tws.next_back() {
                 SearchStep::Done => None,
                 otherwise => Some(otherwise),
@@ -485,7 +485,6 @@ fn test_find_rev_period() {
 }
 
 
-#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_contains() {
@@ -498,7 +497,6 @@ fn test_pcmp_contains() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
-#[cfg(feature = "pcmp")]
 #[test]
 fn test_pcmp_contains_plus() {
     fn prop(a: Text, b: Short<Text>) -> TestResult {
@@ -514,7 +512,6 @@ fn test_pcmp_contains_plus() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
-#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_find() {
@@ -527,7 +524,6 @@ fn test_pcmp_find() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
-#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_find_simple() {
@@ -540,7 +536,6 @@ fn test_pcmp_find_simple() {
     quickcheck(prop as fn(_, _) -> _);
 }
 
-#[cfg(feature = "pcmp")]
 // pcmpestr tests
 #[test]
 fn test_pcmp_find_period() {

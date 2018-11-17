@@ -1,8 +1,7 @@
-#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(feature = "use_std"), no_std)]
 #![cfg_attr(feature = "pattern", feature(pattern))]
-#![cfg_attr(feature = "pcmp", feature(asm))]
 
-#[cfg(not(test))]
+#[cfg(not(feature = "use_std"))]
 extern crate core as std;
 
 use std::cmp;
@@ -11,7 +10,7 @@ use std::usize;
 extern crate memchr;
 
 mod tw;
-#[cfg(feature = "pcmp")]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub mod pcmp;
 pub mod bmh;
 #[cfg(feature = "test-set")]
@@ -28,7 +27,7 @@ use std::str::pattern::{
 
 /// `find_str` finds the first ocurrence of `pattern` in the `text`.
 ///
-/// Uses the SSE42 version if it is compiled in.
+/// Uses the SSE42 version if it is available at runtime.
 #[inline]
 pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
     find_bytes(text.as_bytes(), pattern.as_bytes())
@@ -36,23 +35,20 @@ pub fn find_str(text: &str, pattern: &str) -> Option<usize> {
 
 /// `find_bytes` finds the first ocurrence of `pattern` in the `text`.
 ///
-/// Uses the SSE42 version if it is compiled in.
-#[cfg(feature = "pcmp")]
-#[inline]
-pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
-    pcmp::find(text, pattern)
-}
-
-/// `find_bytes` finds the first ocurrence of `pattern` in the `text`.
-///
-/// Uses the SSE42 version if it is compiled in.
-#[cfg(not(feature = "pcmp"))]
+/// Uses the SSE42 version if it is available at runtime.
 pub fn find_bytes(text: &[u8], pattern: &[u8]) -> Option<usize> {
     if pattern.is_empty() {
         Some(0)
+    } else if text.len() < pattern.len() {
+        return None;
     } else if pattern.len() == 1 {
         memchr::memchr(pattern[0], text)
     } else {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            if pcmp::is_supported() {
+                return unsafe { pcmp::find_inner(text, pattern) };
+            }
+        }
         let mut searcher = TwoWaySearcher::new(pattern, text.len());
         let is_long = searcher.memory == usize::MAX;
         // write out `true` and `false` cases to encourage the compiler
@@ -492,7 +488,7 @@ impl TwoWaySearcher {
     }
 
     /// Return the zero-based critical position and period of the provided needle.
-    /// 
+    ///
     /// The returned period is incorrect when the actual period is "long." In
     /// that case the approximation must be computed separately.
     #[inline(always)]
@@ -913,7 +909,7 @@ fn test_contains() {
     assert!(contains(h, n));
     assert!(contains_rev(h, n));
 
-    let h = "\u{0}\u{0}\u{0}\u{0}"; 
+    let h = "\u{0}\u{0}\u{0}\u{0}";
     let n = "\u{0}";
     assert!(contains(h, n));
     assert!(contains_rev(h, n));

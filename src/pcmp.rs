@@ -12,7 +12,6 @@ extern crate memchr;
 
 use std::cmp;
 use std::iter::Zip;
-use std::ptr;
 
 use self::unchecked_index::get_unchecked;
 
@@ -25,10 +24,11 @@ fn zip<I, J>(i: I, j: J) -> Zip<I::IntoIter, J::IntoIter>
     i.into_iter().zip(j)
 }
 
-/// `pcmpestri` flags
-const EQUAL_ANY: u8 = 0b0000;
-const EQUAL_EACH: u8 = 0b1000;
-const EQUAL_ORDERED: u8 = 0b1100;
+#[cfg(target_arch = "x86")]
+use std::arch::x86::*;
+
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
 
 /// `pcmpestri`
 ///
@@ -37,32 +37,13 @@ const EQUAL_ORDERED: u8 = 0b1100;
 /// PCMPESTRI xmm1, xmm2/m128, imm8
 ///
 /// Return value: least index for start of (partial) match, (16 if no match).
-#[inline(always)]
+#[target_feature(enable = "sse4.2")]
 unsafe fn pcmpestri_16(text: *const u8, offset: usize, text_len: usize,
-                       needle_1: u64, needle_2: u64, needle_len: usize) -> u32 {
+                       needle: __m128i, needle_len: usize) -> u32 {
     //debug_assert!(text_len + offset <= text.len()); // saturates at 16
     //debug_assert!(needle_len <= 16); // saturates at 16
-    let res: u32;
-    // 0xC = 12, Equal Ordered comparison
-    //
-    // movlhps xmm0, xmm1  Move low word of xmm1 to high word of xmm0
-    asm!("movlhps $1, $2
-          pcmpestri $1, [$3 + $4], $5"
-         : // output operands
-         "={ecx}"(res)
-         : // input operands
-         "x"(needle_1),        // operand 1 = needle  `x` = sse register
-         "x"(needle_2),        // operand 1 = needle
-         "r"(text), // operand 2 pointer = haystack
-         "r"(offset),        // operand 2 offset
-         "i"(EQUAL_ORDERED),
-         "{rax}"(needle_len),// length of operand 1 = needle
-         "{rdx}"(text_len)   // length of operand 2 = haystack
-         : // clobbers
-         "cc"
-         : "intel" // options
-    );
-    res
+    let text = _mm_loadu_si128(text.offset(offset as _) as *const _);
+    _mm_cmpestri(needle, needle_len as _, text, text_len as _, _SIDD_CMP_EQUAL_ORDERED) as _
 }
 
 /// `pcmpestrm`
@@ -72,34 +53,26 @@ unsafe fn pcmpestri_16(text: *const u8, offset: usize, text_len: usize,
 /// PCMPESTRM xmm1, xmm2/m128, imm8
 ///
 /// Return value: bitmask in the 16 lsb of the return value.
-#[inline(always)]
+#[target_feature(enable = "sse4.2")]
 unsafe fn pcmpestrm_eq_each(text: *const u8, offset: usize, text_len: usize,
                             needle: *const u8, noffset: usize, needle_len: usize) -> u64 {
     // NOTE: text *must* be readable for 16 bytes
     // NOTE: needle *must* be readable for 16 bytes
     //debug_assert!(text_len + offset <= text.len()); // saturates at 16
     //debug_assert!(needle_len <= 16); // saturates at 16
-    let res: u64;
-    // 0xC = 12, Equal Ordered comparison
-    //
-    // movlhps xmm0, xmm1  Move low word of xmm1 to high word of xmm0
-    asm!("movdqu xmm0, [$1 + $2]
-          pcmpestrm xmm0, [$3 + $4], $5"
-         : // output operands
-         "={xmm0}"(res)
-         : // input operands
-         "r"(needle),         // operand 1 = needle
-         "r"(noffset),        // operand 1 = needle offset
-         "r"(text), // operand 2 pointer = haystack
-         "r"(offset),        // operand 2 offset
-         "i"(EQUAL_EACH),
-         "{rax}"(needle_len),// length of operand 1 = needle
-         "{rdx}"(text_len)   // length of operand 2 = haystack
-         : // clobbers
-         "cc"
-         : "intel" // options
-    );
-    res
+    let needle = _mm_loadu_si128(needle.offset(noffset as _) as *const _);
+    let text = _mm_loadu_si128(text.offset(offset as _) as *const _);
+    let mask = _mm_cmpestrm(needle, needle_len as _, text, text_len as _, _SIDD_CMP_EQUAL_EACH);
+
+    #[cfg(target_arch = "x86")] {
+        let mut res: u64 = ::std::mem::uninitialized();
+        _mm_storel_epi64(&mut res, mask);
+        res
+    }
+
+    #[cfg(target_arch = "x86_64")] {
+        _mm_extract_epi64(mask, 0) as _
+    }
 }
 
 
@@ -110,28 +83,26 @@ fn first_start_of_match(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
     // not safe for text that is non aligned and ends at page boundary
     let patl = pat.len();
     assert!(patl <= 16);
-    // load pat as a little endian word
-    let (patw1, patw2) = pat128(pat);
-    first_start_of_match_inner(text, pat, patw1, patw2)
+    unsafe { first_start_of_match_inner(text, pat, pat128(pat)) }
 }
 
 /// Safe wrapper around pcmpestri to find first match of `pat` in `text`.
-/// `p1`, `p2` are the first two words of `pat` and *must* match.
+/// `p` contains the first two words of `pat` and *must* match.
 /// Length given by length of `pat`, only first 16 bytes considered.
-fn first_start_of_match_inner(text: &[u8], pat: &[u8], p1: u64, p2: u64) -> Option<(usize, usize)> {
+#[target_feature(enable = "sse4.2")]
+unsafe fn first_start_of_match_inner(text: &[u8], pat: &[u8], p: __m128i) -> Option<(usize, usize)> {
     // align the text pointer
     let tp = text.as_ptr();
     let tp_align_offset = tp as usize & 0xF;
     let init_len;
     let tp_aligned;
-    unsafe {
-        if tp_align_offset != 0 {
-            init_len = 16 - tp_align_offset;
-            tp_aligned = tp.offset(-(tp_align_offset as isize));
-        } else {
-            init_len = 0;
-            tp_aligned = tp;
-        };
+
+    if tp_align_offset != 0 {
+        init_len = 16 - tp_align_offset;
+        tp_aligned = tp.offset(-(tp_align_offset as isize));
+    } else {
+        init_len = 0;
+        tp_aligned = tp;
     }
 
     let patl = pat.len();
@@ -158,15 +129,13 @@ fn first_start_of_match_inner(text: &[u8], pat: &[u8], p1: u64, p2: u64) -> Opti
         offset += 16;
     }
     while text.len() >= offset - tp_align_offset + patl {
-        unsafe {
-            let tlen = text.len() - (offset - tp_align_offset);
-            let ret = pcmpestri_16(tp_aligned, offset, tlen, p1, p2, patl) as usize;
-            if ret == 16 {
-                offset += 16;
-            } else {
-                let match_len = cmp::min(patl, 16 - ret);
-                return Some((offset - tp_align_offset + ret, match_len));
-            }
+        let tlen = text.len() - (offset - tp_align_offset);
+        let ret = pcmpestri_16(tp_aligned, offset, tlen, p, patl) as usize;
+        if ret == 16 {
+            offset += 16;
+        } else {
+            let match_len = cmp::min(patl, 16 - ret);
+            return Some((offset - tp_align_offset + ret, match_len));
         }
     }
 
@@ -176,7 +145,7 @@ fn first_start_of_match_inner(text: &[u8], pat: &[u8], p1: u64, p2: u64) -> Opti
 /// safe to search unaligned for first start of match
 ///
 /// unsafe because the end of text must not be close (within 16 bytes) of a page boundary
-unsafe fn first_start_of_match_unaligned(text: &[u8], pat_len: usize, p1: u64, p2: u64) -> Option<(usize, usize)> {
+unsafe fn first_start_of_match_unaligned(text: &[u8], pat_len: usize, p: __m128i) -> Option<(usize, usize)> {
     let tp = text.as_ptr();
     debug_assert!(pat_len <= 16);
     debug_assert!(pat_len <= text.len());
@@ -185,7 +154,7 @@ unsafe fn first_start_of_match_unaligned(text: &[u8], pat_len: usize, p1: u64, p
 
     while text.len() - pat_len >= offset {
         let tlen = text.len() - offset;
-        let ret = pcmpestri_16(tp, offset, tlen, p1, p2, pat_len) as usize;
+        let ret = pcmpestri_16(tp, offset, tlen, p, pat_len) as usize;
         if ret == 16 {
             offset += 16;
         } else {
@@ -242,14 +211,15 @@ fn find_2byte_pat(text: &[u8], pat: &[u8]) -> Option<(usize, usize)> {
 }
 
 /// Simd text search optimized for short patterns (<= 8 bytes)
-fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
+#[target_feature(enable = "sse4.2")]
+unsafe fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
     debug_assert!(pat.len() <= 8);
     /*
     if pat.len() == 2 {
         return find_2byte_pat(text, pat);
     }
     */
-    let (r1, _) = pat128(pat);
+    let r = pat128(pat);
 
     // safe part of text -- everything but the last 16 bytes
     let safetext = &text[..cmp::max(text.len(), 16) - 16];
@@ -260,7 +230,7 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
             break;
         }
         // find the next occurence
-        match unsafe { first_start_of_match_unaligned(&safetext[pos..], pat.len(), r1, 0) } {
+        match first_start_of_match_unaligned(&safetext[pos..], pat.len(), r) {
             None => break, // no matches
             Some((mpos, mlen)) => {
                 pos += mpos;
@@ -286,7 +256,7 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
             return None;
         }
         // find the next occurence
-        match first_start_of_match_inner(&text[pos..], pat, r1, 0) {
+        match first_start_of_match_inner(&text[pos..], pat, r) {
             None => return None, // no matches
             Some((mpos, mlen)) => {
                 pos += mpos;
@@ -308,22 +278,35 @@ fn find_short_pat(text: &[u8], pat: &[u8]) -> Option<usize> {
     }
 }
 
+/// `is_supported` checks whether necessary SSE 4.2 feature is supported on current CPU.
+pub fn is_supported() -> bool {
+    if cfg!(feature = "use_std") {
+        is_x86_feature_detected!("sse4.2")
+    } else {
+        cfg!(target_feature = "sse4.2")
+    }
+}
+
 /// `find` finds the first ocurrence of `pattern` in the `text`.
 ///
 /// This is the SSE42 accelerated version.
 pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
-    let pat = pattern;
-    if pat.len() == 0 {
+    assert!(is_supported());
+
+    if pattern.is_empty() {
         return Some(0);
-    }
-
-    if text.len() < pat.len() {
+    } else if text.len() < pattern.len() {
         return None;
+    } else if pattern.len() == 1 {
+        return memchr::memchr(pattern[0], text);
+    } else {
+        unsafe { find_inner(text, pattern) }
     }
+}
 
-    if pat.len() == 1 {
-        return memchr::memchr(pat[0], text);
-    } else if pat.len() <= 6 {
+#[target_feature(enable = "sse4.2")]
+pub(crate) unsafe fn find_inner(text: &[u8], pat: &[u8]) -> Option<usize> {
+    if pat.len() <= 6 {
         return find_short_pat(text, pat);
     }
 
@@ -347,7 +330,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
     let (right16, _right17) = right.split_at(cmp::min(16, right.len()));
     assert!(right.len() != 0);
 
-    let (r1, r2) = pat128(right);
+    let r = pat128(right);
 
     // safe part of text -- everything but the last 16 bytes
     let safetext = &text[..cmp::max(text.len(), 16) - 16];
@@ -361,13 +344,13 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
             }
             // find the next occurence of the right half
             let start = crit_pos;
-            match unsafe { first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r1, r2) } {
+            match first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) {
                 None => break, // no matches
                 Some((mpos, mlen)) => {
                     pos += mpos;
                     let mut pfxlen = mlen;
                     if pfxlen < right.len() {
-                        pfxlen += shared_prefix(&text[pos + start + mlen..], &right[mlen..]);
+                        pfxlen += shared_prefix_inner(&text[pos + start + mlen..], &right[mlen..]);
                     }
                     if pfxlen != right.len() {
                         // partial match
@@ -399,7 +382,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
             //println!("memory trace pos={}, memory={}", pos, memory);
             let mut pfxlen = if memory == 0 {
                 let start = crit_pos;
-                match unsafe { first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r1, r2) } {
+                match first_start_of_match_unaligned(&safetext[pos + start..], right16.len(), r) {
                     None => break, // no matches
                     Some((mpos, mlen)) => {
                         pos += mpos;
@@ -410,7 +393,7 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
                 memory - crit_pos
             };
             if pfxlen < right.len() {
-                pfxlen += shared_prefix(&text[pos + crit_pos + pfxlen..], &right[pfxlen..]);
+                pfxlen += shared_prefix_inner(&text[pos + crit_pos + pfxlen..], &right[pfxlen..]);
             }
             if pfxlen != right.len() {
                 // partial match
@@ -441,13 +424,13 @@ pub fn find(text: &[u8], pattern: &[u8]) -> Option<usize> {
         }
         // find the next occurence of the right half
         let start = crit_pos;
-        match first_start_of_match_inner(&text[pos + start..], right16, r1, r2) {
+        match first_start_of_match_inner(&text[pos + start..], right16, r) {
             None => return None, // no matches
             Some((mpos, mlen)) => {
                 pos += mpos;
                 let mut pfxlen = mlen;
                 if pfxlen < right.len() {
-                    pfxlen += shared_prefix(&text[pos + start + mlen..], &right[mlen..]);
+                    pfxlen += shared_prefix_inner(&text[pos + start + mlen..], &right[mlen..]);
                 }
                 if pfxlen != right.len() {
                     // partial match
@@ -506,68 +489,59 @@ fn test_find() {
 
 }
 
-/// Load the first 16 bytes of `pat` into two words, little endian
-fn pat128(pat: &[u8]) -> (u64, u64) {
-    // load pat as a little endian word
-    let (mut p1, mut p2) = (0, 0);
-    unsafe {
-        let patl = pat.len();
-        ptr::copy_nonoverlapping(&pat[0],
-                                 &mut p1 as *mut _ as *mut _,
-                                 cmp::min(8, patl));
-
-        if patl > 8 {
-            ptr::copy_nonoverlapping(&pat[8],
-                                     &mut p2 as *mut _ as *mut _,
-                                     cmp::min(16, patl) - 8);
-
-        }
-    }
-    (p1, p2)
+/// Load the first 16 bytes of `pat` into a SIMD vector.
+#[inline(always)]
+fn pat128(pat: &[u8]) -> __m128i {
+    unsafe { _mm_loadu_si128(pat.as_ptr() as *const _) }
 }
 
 /// Find longest shared prefix, return its length
-/// 
+///
 /// Alignment safe: works for any text, pat.
 pub fn shared_prefix(text: &[u8], pat: &[u8]) -> usize {
+    assert!(is_supported());
+
+    unsafe { shared_prefix_inner(text, pat) }
+}
+
+#[target_feature(enable = "sse4.2")]
+unsafe fn shared_prefix_inner(text: &[u8], pat: &[u8]) -> usize {
     let tp = text.as_ptr();
     let tlen = text.len();
     let pp = pat.as_ptr();
     let plen = pat.len();
     let len = cmp::min(tlen, plen);
 
-    unsafe {
-        // TODO: do non-aligned prefix manually too(?) aligned text or pat..
-        // all but the end we can process with pcmpestrm
-        let initial_part = len.saturating_sub(16);
-        let mut prefix_len = 0;
-        let mut offset = 0;
-        while offset < initial_part {
-            let initial_tail = initial_part - offset;
-            let mask = pcmpestrm_eq_each(tp, offset, initial_tail, pp, offset, initial_tail);
-            // find zero in the first 16 bits
-            if mask != 0xffff {
-                let first_bit_set = (mask ^ 0xffff).trailing_zeros() as usize;
-                prefix_len += first_bit_set;
-                return prefix_len;
-            } else {
-                prefix_len += cmp::min(initial_tail, 16);
-            }
-            offset += 16;
+    // TODO: do non-aligned prefix manually too(?) aligned text or pat..
+    // all but the end we can process with pcmpestrm
+    let initial_part = len.saturating_sub(16);
+    let mut prefix_len = 0;
+    let mut offset = 0;
+    while offset < initial_part {
+        let initial_tail = initial_part - offset;
+        let mask = pcmpestrm_eq_each(tp, offset, initial_tail, pp, offset, initial_tail);
+        // find zero in the first 16 bits
+        if mask != 0xffff {
+            let first_bit_set = (mask ^ 0xffff).trailing_zeros() as usize;
+            prefix_len += first_bit_set;
+            return prefix_len;
+        } else {
+            prefix_len += cmp::min(initial_tail, 16);
         }
-        // so one block left, the last (up to) 16 bytes
-        // unchecked slicing .. we don't want panics in this function
-        let text_suffix = get_unchecked(text, prefix_len..len);
-        let pat_suffix = get_unchecked(pat, prefix_len..len);
-        for (&a, &b) in zip(text_suffix, pat_suffix) {
-            if a != b {
-                break;
-            }
-            prefix_len += 1;
-        }
-
-        prefix_len
+        offset += 16;
     }
+    // so one block left, the last (up to) 16 bytes
+    // unchecked slicing .. we don't want panics in this function
+    let text_suffix = get_unchecked(text, prefix_len..len);
+    let pat_suffix = get_unchecked(pat, prefix_len..len);
+    for (&a, &b) in zip(text_suffix, pat_suffix) {
+        if a != b {
+            break;
+        }
+        prefix_len += 1;
+    }
+
+    prefix_len
 }
 
 #[test]
