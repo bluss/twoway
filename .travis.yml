@@ -1,17 +1,50 @@
 language: rust
 sudo: false
+
 matrix:
   include:
     - rust: 1.27.0
+      env:
+        TARGET=x86_64-unknown-linux-gnu
     - rust: stable
+      env:
+        TARGET=x86_64-unknown-linux-gnu
+    - rust: stable
+      env:
+        TARGET=i686-unknown-linux-gnu
     - rust: beta
+      env:
+        TARGET=x86_64-unknown-linux-gnu
     - rust: nightly
       env:
-       - FEATURES='all benchmarks'
-       - BENCH=1
+        TARGET=x86_64-unknown-linux-gnu
+        FEATURES='all benchmarks'
+        BENCH=1
     - rust: nightly
       env:
-       - FEATURES='pattern'
+        TARGET=x86_64-unknown-linux-gnu
+        FEATURES='pattern'
+    - rust: nightly
+      env:
+        TARGET=i686-unknown-linux-gnu
+        FEATURES='pattern'
+    - rust: nightly
+      env:
+        TARGET=aarch64-unknown-linux-gnu
+        BUILD_ONLY=1
+env:
+  global:
+    - HOST=x86_64-unknown-linux-gnu
+
+addons:
+  apt:
+    packages:
+      # needed for i686-unknown-linux-gnu target
+      - gcc-multilib
+install:
+  # "rustup error: cannot re-add" without this conditional check
+- if [[ $HOST != $TARGET ]]; then rustup target add $TARGET; fi
+
 branches:
   only:
     - master
@@ -19,7 +52,9 @@ script:
   - |
       cargo build --verbose --no-default-features --features "$FEATURES" &&
       cargo build --verbose --features "$FEATURES" &&
-      cargo test --verbose --lib &&
-      ([ -z "$FEATURES" ] || cargo test --verbose --features "$FEATURES" ) &&
-      ([ "$BENCH" != 1 ] || cargo bench --verbose --features "$FEATURES") &&
-      cargo doc --verbose --features "$FEATURES"
+      ([ -n "$BUILD_ONLY" ] || (
+              cargo test --verbose --lib &&
+              ([ -z "$FEATURES" ] || cargo test --verbose --features "$FEATURES" ) &&
+              ([ "$BENCH" != 1 ] || cargo bench --verbose --features "$FEATURES") &&
+              cargo doc --verbose --features "$FEATURES"
+      ))
