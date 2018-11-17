@@ -18,10 +18,6 @@ mod pcmp;
 #[cfg(feature="benchmarks")]
 pub mod bmh;
 
-#[cfg(feature = "test-set")]
-pub mod set;
-mod util;
-
 #[cfg(feature = "pattern")]
 use std::str::pattern::{
     Pattern,

@@ -33,9 +33,8 @@ use_std = ["memchr/use_std"]
 
 # Internal features for testing & benchmarking & development
 pattern = []
-test-set = []
 benchmarks = ["galil-seiferas", "pattern"]
-all = ["jetscii", "pattern", "test-set"]
+all = ["jetscii", "pattern"]
 
 
 [package.metadata.release]
