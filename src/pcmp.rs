@@ -498,16 +498,14 @@ fn pat128(pat: &[u8]) -> __m128i {
     }
 }
 
+/// Load the first len bytes (maximum 16) from ptr into a vector, safely
 #[inline(always)]
-unsafe fn mask_load(ptr: *const u8, len: usize) -> __m128i {
-    const REGSZ: usize = mem::size_of::<__m128i>();
-    if len >= REGSZ {
-        return _mm_loadu_si128(ptr as _);
-    }
+unsafe fn mask_load(ptr: *const u8, mut len: usize) -> __m128i {
+    let mut data: __m128i = _mm_setzero_si128();
+    len = cmp::min(len, mem::size_of_val(&data));
 
-    let mut data = [0; REGSZ];
-    ::std::ptr::copy_nonoverlapping(ptr, data.as_mut_ptr(), len);
-    return _mm_loadu_si128(data.as_mut_ptr() as _);
+    ::std::ptr::copy_nonoverlapping(ptr, &mut data as *mut _ as _, len);
+    return data;
 }
 
 /// Find longest shared prefix, return its length
