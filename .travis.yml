@@ -26,6 +26,11 @@ matrix:
         FEATURES='pattern'
     - rust: nightly
       env:
+        TARGET=x86_64-unknown-linux-gnu
+        FEATURES='pattern'
+        TWOWAY_TEST_DISABLE_PCMP=1
+    - rust: nightly
+      env:
         TARGET=i686-unknown-linux-gnu
         FEATURES='pattern'
     - rust: nightly
