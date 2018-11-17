@@ -10,9 +10,14 @@ use std::usize;
 extern crate memchr;
 
 mod tw;
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[cfg(all(feature="benchmarks", any(target_arch = "x86", target_arch = "x86_64")))]
 pub mod pcmp;
+#[cfg(all(not(feature="benchmarks"), any(target_arch = "x86", target_arch = "x86_64")))]
+mod pcmp;
+
+#[cfg(feature="benchmarks")]
 pub mod bmh;
+
 #[cfg(feature = "test-set")]
 pub mod set;
 mod util;
