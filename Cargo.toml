@@ -20,11 +20,11 @@ galil-seiferas = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
 itertools = "0.7.0"
-odds = { version = "0.2.26" }
+odds = { version = "0.3", features=["std-string"] }
 macro-attr = "0.2"
 newtype_derive = "0.1"
-rand = "0.3.10"
-quickcheck = { version = "0.5", default-features = false }
+rand = "0.6"
+quickcheck = { version = "0.7", default-features = false }
 
 [features]
 # stable and pcmp support: opting out of using std, becoming no_std
