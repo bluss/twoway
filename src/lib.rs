@@ -1,6 +1,19 @@
 #![cfg_attr(not(feature = "use_std"), no_std)]
 #![cfg_attr(feature = "pattern", feature(pattern))]
 
+//!
+//! Fast substring search for strings and byte strings, using the [two-way algorithm][tw].
+//! 
+//! This is the same code as is included in Rust's libstd that powers
+//! `str::find(&str)`, but here it is exposed with some improvements:
+//! 
+//! - Available for byte string searches using ``&[u8]``
+//! - Having an optional SSE4.2 accelerated version (if detected at runtime) which is even faster.
+//!   Runtime detection requires the default std feature.
+//! - Using `memchr` for the single byte case, which is ultra fast.
+//! 
+//! [tw]: http://www-igm.univ-mlv.fr/~lecroq/string/node26.html
+
 #[cfg(not(feature = "use_std"))]
 extern crate core as std;
 

@@ -33,6 +33,15 @@ but here it is exposed with some improvements:
 Recent Changes
 --------------
 
+- 0.2.0
+
+  - Use `std::arch` and transparently support SSE4.2 when possible (x86 and
+    x86-64 only) to enable an accelerated implementation of the algorithm.
+    Forward search only. By @RReverser and @bluss
+  - Fix a bug in the SSE4.2 algorithm that made it much slower than it should have been,
+    so performance increases as well.
+  - Requires Rust 1.27
+
 - 0.1.8
 
   - Tweak crate keywords by @tari
