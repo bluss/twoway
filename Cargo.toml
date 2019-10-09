@@ -1,6 +1,6 @@
 [package]
 name = "twoway"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["bluss"]
 
 description = "Fast substring search for strings and byte strings. Optional SSE4.2 acceleration (if detected at runtime) using pcmpestri. Memchr is the only mandatory dependency. The two way algorithm is also used by rust's libstd itself, but here it is exposed both for byte strings, using memchr, and optionally using a SSE4.2 accelerated version."
@@ -39,3 +39,4 @@ all = ["jetscii", "pattern"]
 
 [package.metadata.release]
 no-dev-version = true
+tag-name = "{{version}}"

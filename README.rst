@@ -33,6 +33,10 @@ but here it is exposed with some improvements:
 Recent Changes
 --------------
 
+- 0.2.1
+
+  - Update dev-deps
+
 - 0.2.0
 
   - Use `std::arch` and transparently support SSE4.2 when possible (x86 and
