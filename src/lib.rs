@@ -793,7 +793,7 @@ impl TwoWaySearcher {
 
 // TwoWayStrategy allows the algorithm to either skip non-matches as quickly
 // as possible, or to work in a mode where it emits Rejects relatively quickly.
-trait TwoWayStrategy {
+pub trait TwoWayStrategy {
     type Output;
     fn use_early_reject() -> bool;
     fn rejecting(usize, usize) -> Self::Output;
