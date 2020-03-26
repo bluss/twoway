@@ -29,7 +29,7 @@ quickcheck = { version = "0.8", default-features = false }
 [features]
 # stable and pcmp support: opting out of using std, becoming no_std
 default = ["use_std"]
-use_std = ["memchr/use_std"]
+use_std = ["memchr/std"]
 
 # Internal features for testing & benchmarking & development
 pattern = []
