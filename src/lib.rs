@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "use_std"), no_std)]
 #![cfg_attr(feature = "pattern", feature(pattern))]
 
+//! **This crate is deprecated. Use crate `memchr` instead.**
 //!
 //! Fast substring search for strings and byte strings, using the [two-way algorithm][tw].
 //! 
