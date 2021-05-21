@@ -537,7 +537,7 @@ impl TwoWaySearcher {
     // How far we can jump when we encounter a mismatch is all based on the fact
     // that (u, v) is a critical factorization for the needle.
     #[inline(always)]
-    fn next<S>(&mut self, haystack: &[u8], needle: &[u8], long_period: bool)
+    pub fn next<S>(&mut self, haystack: &[u8], needle: &[u8], long_period: bool)
         -> S::Output
         where S: TwoWayStrategy
     {
@@ -620,7 +620,7 @@ impl TwoWaySearcher {
     // To search in reverse through the haystack, we search forward through
     // a reversed haystack with a reversed needle, matching first u' and then v'.
     #[inline]
-    fn next_back<S>(&mut self, haystack: &[u8], needle: &[u8], long_period: bool)
+    pub fn next_back<S>(&mut self, haystack: &[u8], needle: &[u8], long_period: bool)
         -> S::Output
         where S: TwoWayStrategy
     {
@@ -794,7 +794,7 @@ impl TwoWaySearcher {
 
 // TwoWayStrategy allows the algorithm to either skip non-matches as quickly
 // as possible, or to work in a mode where it emits Rejects relatively quickly.
-trait TwoWayStrategy {
+pub trait TwoWayStrategy {
     type Output;
     fn use_early_reject() -> bool;
     fn rejecting(usize, usize) -> Self::Output;
