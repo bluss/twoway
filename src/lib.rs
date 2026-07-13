@@ -31,6 +31,7 @@ mod pcmp;
 
 #[cfg(feature="benchmarks")]
 pub mod bmh;
+pub mod bmh_const;
 
 #[cfg(feature = "pattern")]
 use std::str::pattern::{
